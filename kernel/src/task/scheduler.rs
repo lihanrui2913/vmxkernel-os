@@ -13,7 +13,6 @@ pub static SCHEDULER_INIT: AtomicBool = AtomicBool::new(false);
 pub static SCHEDULER: Lazy<Mutex<Scheduler>> = Lazy::new(|| Mutex::new(Scheduler::new()));
 
 pub fn init() {
-    x86_64::instructions::interrupts::enable();
     SCHEDULER_INIT.store(true, Ordering::SeqCst);
     log::info!("Scheduler initialized, interrupts enabled!");
 }

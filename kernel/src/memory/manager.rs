@@ -1,12 +1,12 @@
 use core::marker::PhantomData;
 use x86_64::instructions::interrupts;
 use x86_64::structures::paging::mapper::MapToError;
-use x86_64::structures::paging::{FrameAllocator, FrameDeallocator};
+use x86_64::structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame};
 use x86_64::structures::paging::{Mapper, OffsetPageTable, PageTableFlags};
 use x86_64::structures::paging::{Page, PageSize, Size4KiB};
-use x86_64::VirtAddr;
+use x86_64::{PhysAddr, VirtAddr};
 
-use super::BitmapFrameAllocator;
+use super::{BitmapFrameAllocator, FRAME_ALLOCATOR, KERNEL_PAGE_TABLE};
 
 pub enum MappingType {
     UserCode,
@@ -87,5 +87,61 @@ impl<S: PageSize> MemoryManager<S> {
                 unsafe { frame_allocator.deallocate_frame(frame) };
             }
         })
+    }
+
+    /// Allocate memory for the DMA drivers, `cnt` is the number of physical memory frames you need.
+    pub fn alloc_for_dma(cnt: usize) -> (PhysAddr, VirtAddr) {
+        let phys = FRAME_ALLOCATOR.lock().allocate_frames(cnt).unwrap();
+        let phys = PhysAddr::new(phys);
+        let virt = crate::memory::convert_physical_to_virtual(phys);
+        (phys, virt)
+    }
+
+    /// deallocates the physical memory.
+    pub fn dealloc_for_dma(virt_addr: VirtAddr, _cnt: usize) {
+        let phys = crate::memory::convert_virtual_to_physical(virt_addr);
+        unsafe {
+            FRAME_ALLOCATOR
+                .lock()
+                .deallocate_frame(PhysFrame::containing_address(phys));
+        }
+    }
+
+    pub fn map_virt_to_phys(virt: usize, phys: usize, size: usize, flags: PageTableFlags) {
+        for i in 0..(size / 4096) {
+            Self::do_map_to(virt + i * 4096, phys + i * 4096, flags);
+        }
+    }
+
+    pub fn do_map_to(virt: usize, phys: usize, flags: PageTableFlags) {
+        let mut kernel_page_table = KERNEL_PAGE_TABLE.lock();
+
+        let result = unsafe {
+            kernel_page_table.map_to(
+                Page::<Size4KiB>::containing_address(VirtAddr::new(virt as u64)),
+                PhysFrame::containing_address(PhysAddr::new(phys as u64)),
+                flags,
+                &mut *FRAME_ALLOCATOR.lock(),
+            )
+        };
+
+        match result {
+            Err(err) => match err {
+                MapToError::FrameAllocationFailed => panic!("Frame allocation failed!!!"),
+                MapToError::PageAlreadyMapped(frame) => {
+                    log::warn!("Page already mapped: frame: {:?}", frame);
+                    kernel_page_table
+                        .unmap(Page::<Size4KiB>::containing_address(VirtAddr::new(
+                            virt as u64,
+                        )))
+                        .expect("Cannot unmap to")
+                        .1
+                        .flush();
+                    Self::do_map_to(virt, phys, flags);
+                }
+                MapToError::ParentEntryHugePage => log::warn!("Parent entry huge page"),
+            },
+            Ok(flusher) => flusher.flush(),
+        }
     }
 }

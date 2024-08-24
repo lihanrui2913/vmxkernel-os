@@ -37,6 +37,8 @@ extern "C" fn _start() -> ! {
     // Process::new_user_process("Hello", hello_raw_elf);
     // Process::new_user_process("Counter", counter_raw_elf);
 
+    x86_64::instructions::interrupts::enable();
+
     loop {
         x86_64::instructions::hlt();
     }

@@ -11,7 +11,7 @@ pub mod memory;
 pub mod syscall;
 pub mod task;
 
-extern crate alloc;
+pub extern crate alloc;
 
 pub fn init() {
     memory::init_heap();
@@ -22,6 +22,7 @@ pub fn init() {
     arch::apic::init();
     device::mouse::init();
     device::pci::init();
+    device::nvme::init();
     syscall::init();
     task::scheduler::init();
 }
