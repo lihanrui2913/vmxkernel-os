@@ -21,6 +21,7 @@ pub fn init() {
     arch::smp::CPUS.write().init_ap();
     arch::apic::init();
     device::mouse::init();
+    device::pci::init();
     syscall::init();
     task::scheduler::init();
 }
