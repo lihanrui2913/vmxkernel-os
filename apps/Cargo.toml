@@ -1,0 +1,10 @@
+cargo-features = ["per-package-target"]
+
+[package]
+name = "apps"
+version = "0.1.0"
+edition = "2021"
+forced-target = "x86_64-unknown-none"
+
+[dependencies]
+good_memory_allocator = "0.1.7"
