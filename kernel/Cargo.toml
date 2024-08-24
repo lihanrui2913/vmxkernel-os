@@ -20,6 +20,7 @@ limine = "0.2.0"
 colorz = "1.1.2"
 os-terminal = "0.3.6"
 pci_types = "0.10.0"
+nvme = "0.1.0"
 
 [dependencies.time]
 version = "0.3.36"

@@ -265,6 +265,7 @@ dependencies = [
  "good_memory_allocator",
  "limine",
  "log",
+ "nvme",
  "object",
  "os-terminal",
  "pc-keyboard",
@@ -339,6 +340,15 @@ name = "num-conv"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
+
+[[package]]
+name = "nvme"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8779774ed019503a6bcbda92004aa826dfb420f3dabe0591e9035fec86869675"
+dependencies = [
+ "log",
+]
 
 [[package]]
 name = "object"
