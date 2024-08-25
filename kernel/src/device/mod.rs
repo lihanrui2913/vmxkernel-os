@@ -1,3 +1,4 @@
+pub mod block;
 pub mod display;
 pub mod hpet;
 pub mod keyboard;

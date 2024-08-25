@@ -2,11 +2,15 @@
 #![no_main]
 
 use core::panic::PanicInfo;
+use kernel::alloc::string::String;
 use kernel::device::hpet::HPET;
 use kernel::device::keyboard::print_keypresses;
 use kernel::device::rtc::RtcDateTime;
 use kernel::device::terminal::terminal_manual_flush;
+use kernel::fs::operation::kernel_open;
+use kernel::task::process::Process;
 use kernel::task::thread::Thread;
+use kernel::START_SCHEDULE;
 use limine::BaseRevision;
 
 #[used]
@@ -32,11 +36,15 @@ extern "C" fn _start() -> ! {
     let current_time = RtcDateTime::new().to_datetime().unwrap();
     log::info!("Current time: {}", current_time);
 
-    // let hello_raw_elf = include_bytes!("../../target/x86_64-unknown-none/release/hello");
-    // let counter_raw_elf = include_bytes!("../../target/x86_64-unknown-none/release/counter");
-    // Process::new_user_process("Hello", hello_raw_elf);
-    // Process::new_user_process("Counter", counter_raw_elf);
+    kernel::fs::init();
 
+    let inode = kernel_open(String::from("/init.elf")).expect("Cannot open init.elf");
+    let size = inode.read().size();
+    let buf = kernel::alloc::vec![0u8; size].leak();
+    inode.read().read_at(0, buf);
+    Process::new_user_process("init", buf);
+
+    START_SCHEDULE.store(true, core::sync::atomic::Ordering::SeqCst);
     x86_64::instructions::interrupts::enable();
 
     loop {

@@ -1,12 +1,11 @@
-use core::{slice, str};
-use x86_64::VirtAddr;
-
-use crate::memory::{ref_current_page_table, MappingType, MemoryManager};
 use crate::task::scheduler::SCHEDULER;
+use alloc::alloc::{alloc, dealloc};
+use core::alloc::Layout;
+use core::{slice, str};
 
-pub fn write(buffer: *const u8, length: usize) {
+pub fn write(buffer: *const u8, length: usize) -> usize {
     if length == 0 {
-        return;
+        return 0;
     }
 
     if let Ok(string) = unsafe {
@@ -15,23 +14,11 @@ pub fn write(buffer: *const u8, length: usize) {
     } {
         crate::print!("{}", string);
     };
+
+    0
 }
 
-pub fn malloc(address: usize, length: usize) {
-    if length == 0 {
-        return;
-    }
-
-    MemoryManager::alloc_range(
-        VirtAddr::new(address as u64),
-        length as u64,
-        MappingType::UserData.flags(),
-        &mut unsafe { ref_current_page_table() },
-    )
-    .expect("Failed to allocate memory for malloc");
-}
-
-pub fn exit() {
+pub fn exit() -> ! {
     {
         let current_thread = {
             let mut scheduler = SCHEDULER.lock();
@@ -48,9 +35,29 @@ pub fn exit() {
         }
     }
 
-    unsafe {
-        loop {
+    loop {
+        unsafe {
             core::arch::asm!("sti", "2:", "hlt", "jmp 2b");
         }
     }
+}
+
+pub fn malloc(size: usize, align: usize) -> usize {
+    let layout = Layout::from_size_align(size, align);
+    if let Ok(layout) = layout {
+        let addr = unsafe { alloc(layout) };
+        addr as usize
+    } else {
+        0
+    }
+}
+
+pub fn free(addr: usize, size: usize, align: usize) -> usize {
+    let layout = Layout::from_size_align(size, align);
+    if let Ok(layout) = layout {
+        unsafe { dealloc(addr as _, layout) }
+        return 0;
+    }
+
+    0
 }

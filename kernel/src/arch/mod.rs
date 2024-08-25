@@ -4,8 +4,8 @@ use interrupts::IDT;
 use limine::smp::Cpu;
 use smp::CPUS;
 
-use crate::syscall;
 use crate::task::scheduler::SCHEDULER_INIT;
+use crate::{syscall, START_SCHEDULE};
 
 pub mod acpi;
 pub mod apic;
@@ -26,8 +26,10 @@ unsafe extern "C" fn ap_entry(smp_info: &Cpu) -> ! {
     syscall::init();
 
     while !SCHEDULER_INIT.load(Ordering::SeqCst) {}
-    x86_64::instructions::interrupts::enable();
     log::debug!("Application Processor {} started", smp_info.id);
+
+    while !START_SCHEDULE.load(Ordering::SeqCst) {}
+    x86_64::instructions::interrupts::enable();
 
     loop {
         x86_64::instructions::hlt();

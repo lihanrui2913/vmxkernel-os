@@ -19,3 +19,13 @@ features = ["std", "alloc"]
 path = "../kernel"
 artifact = "bin"
 target = "x86_64-unknown-none"
+
+[dependencies.init]
+path = "../apps/init"
+artifact = "bin"
+target = "x86_64-unknown-none"
+
+[dependencies.shell]
+path = "../apps/shell"
+artifact = "bin"
+target = "x86_64-unknown-none"

@@ -10,6 +10,7 @@ enum SyscallIndex {
     Write,
     Malloc,
     Exit,
+    Free,
 }
 
 impl From<usize> for SyscallIndex {
@@ -30,7 +31,7 @@ pub extern "C" fn syscall_matcher(
     arg4: usize,
     arg5: usize,
     arg6: usize,
-) {
+) -> usize {
     let syscall_number_raw: usize;
     unsafe { asm!("mov {0}, rax", out(reg) syscall_number_raw) };
 
@@ -39,5 +40,6 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::Write => write(arg1 as *const u8, arg2),
         SyscallIndex::Malloc => malloc(arg1, arg2),
         SyscallIndex::Exit => exit(),
+        SyscallIndex::Free => free(arg1, arg2, arg3),
     }
 }

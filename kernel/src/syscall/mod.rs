@@ -57,6 +57,7 @@ extern "C" fn syscall_handler() {
             "pop rbp",
             "pop r11",
             "pop rcx",
+
             "sysretq",
             syscall_matcher = sym syscall_matcher,
             options(noreturn)
