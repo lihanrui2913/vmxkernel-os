@@ -7,7 +7,7 @@ use super::KERNEL_PAGE_TABLE;
 use crate::memory::MemoryManager;
 
 pub const HEAP_START: usize = 0x114514000000;
-pub const HEAP_SIZE: usize = 32 * 1024 * 1024;
+pub const HEAP_SIZE: usize = 64 * 1024 * 1024;
 
 #[global_allocator]
 static ALLOCATOR: SpinLockedAllocator = SpinLockedAllocator::empty();
@@ -23,7 +23,7 @@ pub fn init_heap() {
     MemoryManager::alloc_range(
         heap_start,
         HEAP_SIZE as u64,
-        MappingType::KernelData.flags(),
+        MappingType::UserData.flags(),
         &mut KERNEL_PAGE_TABLE.lock(),
     )
     .unwrap();

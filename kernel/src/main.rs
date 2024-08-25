@@ -7,7 +7,7 @@ use kernel::device::hpet::HPET;
 use kernel::device::keyboard::print_keypresses;
 use kernel::device::rtc::RtcDateTime;
 use kernel::device::terminal::terminal_manual_flush;
-use kernel::fs::operation::kernel_open;
+use kernel::fs::operation::{init_file_descriptor_manager, kernel_open};
 use kernel::task::process::Process;
 use kernel::task::thread::Thread;
 use kernel::START_SCHEDULE;
@@ -42,7 +42,8 @@ extern "C" fn _start() -> ! {
     let size = inode.read().size();
     let buf = kernel::alloc::vec![0u8; size].leak();
     inode.read().read_at(0, buf);
-    Process::new_user_process("init", buf);
+    let process = Process::new_user_process("init", buf);
+    init_file_descriptor_manager(process.read().id);
 
     START_SCHEDULE.store(true, core::sync::atomic::Ordering::SeqCst);
     x86_64::instructions::interrupts::enable();

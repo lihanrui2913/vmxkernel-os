@@ -59,14 +59,17 @@ impl Process {
         process
     }
 
-    pub fn new_user_process(name: &str, elf_data: &'static [u8]) {
+    pub fn new_user_process(name: &str, elf_data: &'static [u8]) -> SharedProcess {
         let binary = ProcessBinary::parse(elf_data);
-        interrupts::without_interrupts(|| {
+        let process = interrupts::without_interrupts(|| {
             let process = Arc::new(RwLock::new(Box::new(Self::new(name))));
             ProcessBinary::map_segments(&binary, &mut process.write().page_table);
             Thread::new_user_thread(Arc::downgrade(&process), binary.entry() as usize);
             PROCESSES.write().push_back(process.clone());
+            process
         });
+
+        return process;
     }
 
     pub fn exit_process(&self) {

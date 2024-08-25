@@ -4,6 +4,7 @@
 pub extern crate alloc;
 
 pub mod debug;
+pub mod fs;
 pub mod mm;
 pub mod task;
 

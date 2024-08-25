@@ -2,16 +2,16 @@ use core::fmt::{self, Write};
 
 use spin::Mutex;
 
-pub fn write(str: &str) -> usize {
-    const WRITE_SYSCALL_ID: u64 = 1;
-    crate::syscall(WRITE_SYSCALL_ID, str.as_ptr() as usize, str.len(), 0, 0, 0)
+pub fn print(str: &str) -> usize {
+    const PRINT_SYSCALL_ID: u64 = 1;
+    crate::syscall(PRINT_SYSCALL_ID, str.as_ptr() as usize, str.len(), 0, 0, 0)
 }
 
 struct AppOutputStream;
 
 impl Write for AppOutputStream {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        write(s);
+        print(s);
         Ok(())
     }
 }

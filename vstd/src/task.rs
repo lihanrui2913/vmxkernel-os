@@ -4,3 +4,8 @@ pub fn exit(code: usize) -> ! {
 
     loop {}
 }
+
+pub fn execve(buf: &[u8]) -> usize {
+    const EXECVE_SYSCALL_ID: u64 = 10;
+    crate::syscall(EXECVE_SYSCALL_ID, buf.as_ptr() as usize, buf.len(), 0, 0, 0)
+}

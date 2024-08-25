@@ -6,11 +6,17 @@ use super::operations::*;
 #[derive(Debug)]
 #[allow(dead_code)]
 enum SyscallIndex {
-    Read,
-    Write,
+    Null,
+    Print,
     Malloc,
     Exit,
     Free,
+    Open,
+    Close,
+    Read,
+    Write,
+    Fsize,
+    Execve,
 }
 
 impl From<usize> for SyscallIndex {
@@ -36,10 +42,16 @@ pub extern "C" fn syscall_matcher(
     unsafe { asm!("mov {0}, rax", out(reg) syscall_number_raw) };
 
     match SyscallIndex::from(syscall_number_raw) {
-        SyscallIndex::Read => unimplemented!(),
-        SyscallIndex::Write => write(arg1 as *const u8, arg2),
+        SyscallIndex::Null => unimplemented!(),
+        SyscallIndex::Print => print(arg1 as *const u8, arg2),
         SyscallIndex::Malloc => malloc(arg1, arg2),
         SyscallIndex::Exit => exit(),
         SyscallIndex::Free => free(arg1, arg2, arg3),
+        SyscallIndex::Open => open(arg1, arg2, arg3),
+        SyscallIndex::Close => close(arg1),
+        SyscallIndex::Read => read(arg1, arg2, arg3),
+        SyscallIndex::Write => write(arg1, arg2, arg3),
+        SyscallIndex::Fsize => fsize(arg1),
+        SyscallIndex::Execve => execve(arg1, arg2),
     }
 }
