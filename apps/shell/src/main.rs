@@ -57,11 +57,11 @@ pub fn main() -> usize {
 
     let mut input_buf = String::new();
 
-    print!("{}", get_prompt());
-
     let fd = open(String::from("/dev/terminal"), vstd::fs::OpenMode::Read);
 
     loop {
+        print!("{}", get_prompt());
+
         shell_read_line(fd, &mut input_buf);
 
         println!();
@@ -75,11 +75,8 @@ pub fn main() -> usize {
 
         if let Some(function) = function {
             function(args);
-        } else {
-            run::try_run(args[0].clone());
+        } else if let None = run::try_run(args[0].clone()) {
             println!("Command not found: {}", args[0]);
         }
-
-        print!("\x1b[0m{}", get_prompt());
     }
 }

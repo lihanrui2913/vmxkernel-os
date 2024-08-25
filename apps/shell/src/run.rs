@@ -4,8 +4,11 @@ use vstd::{
     task::{execve, wait},
 };
 
-pub fn try_run(path: String) -> usize {
+pub fn try_run(path: String) -> Option<()> {
     let fd = open(path, OpenMode::Read);
+    if fd == usize::MAX {
+        return None;
+    }
     let mut buf = vec![0; fsize(fd)];
     read(fd, &mut buf);
     close(fd);
@@ -13,5 +16,5 @@ pub fn try_run(path: String) -> usize {
     let pid = execve(&buf);
     wait(pid);
 
-    0
+    Some(())
 }

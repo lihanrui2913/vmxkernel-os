@@ -4,7 +4,7 @@ use crate::task::scheduler::SCHEDULER;
 use alloc::alloc::{alloc, dealloc};
 use alloc::string::String;
 use core::alloc::Layout;
-use core::{slice, str};
+use core::{slice, str, usize};
 
 pub fn print(buffer: *const u8, length: usize) -> usize {
     if length == 0 {
@@ -65,7 +65,10 @@ pub fn open(path: usize, path_len: usize, mode: usize) -> usize {
     let slice = unsafe { core::slice::from_raw_parts(path as _, path_len) };
     let path = String::from(str::from_utf8(slice).expect("Cannot from utf8"));
 
-    crate::fs::operation::open(path.clone(), OpenMode::from(mode)).unwrap()
+    if let Some(ret) = crate::fs::operation::open(path.clone(), OpenMode::from(mode)) {
+        return ret;
+    }
+    usize::MAX
 }
 
 pub fn close(fd: usize) -> usize {
