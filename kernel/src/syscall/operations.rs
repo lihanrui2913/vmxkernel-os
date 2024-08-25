@@ -1,9 +1,11 @@
 use crate::fs::operation::{get_inode_by_fd, OpenMode};
-use crate::memory::addr_to_mut_ref;
+use crate::fs::vfs::inode::{FileInfo, InodeTy};
+use crate::memory::{addr_to_mut_ref, write_for_syscall};
 use crate::task::process::is_process_exited;
 use crate::task::scheduler::SCHEDULER;
 use alloc::alloc::{alloc, dealloc};
 use alloc::string::String;
+use alloc::vec::Vec;
 use core::alloc::Layout;
 use core::{slice, str, usize};
 use x86_64::VirtAddr;
@@ -133,4 +135,42 @@ pub fn ftype(fd: usize) -> usize {
     }
 
     usize::MAX
+}
+
+pub fn list_dir(path_addr: usize, path_len: usize, buf_addr: usize) -> usize {
+    let buf = unsafe { slice::from_raw_parts(path_addr as _, path_len) };
+    let path = String::from(core::str::from_utf8(buf).unwrap());
+
+    #[derive(Clone)]
+    #[allow(dead_code)]
+    struct TemporyInfo {
+        name: &'static [u8],
+        ty: InodeTy,
+    }
+
+    let file_infos: Vec<TemporyInfo> = {
+        let infos = crate::fs::operation::list_dir(path);
+        let mut new_infos = Vec::new();
+        for info in infos.iter() {
+            let FileInfo { name, ty } = info;
+            let new_name = alloc::vec![0u8; name.len()].leak();
+            new_name[..name.len()].copy_from_slice(name.as_bytes());
+            new_infos.push(TemporyInfo {
+                name: new_name,
+                ty: *ty,
+            });
+        }
+        new_infos
+    };
+
+    write_for_syscall(VirtAddr::new(buf_addr as u64), file_infos.as_slice());
+
+    0
+}
+
+pub fn dir_item_num(path_addr: usize, path_len: usize) -> usize {
+    let buf = unsafe { slice::from_raw_parts(path_addr as _, path_len) };
+    let path = String::from(core::str::from_utf8(buf).unwrap());
+
+    crate::fs::operation::list_dir(path).len()
 }

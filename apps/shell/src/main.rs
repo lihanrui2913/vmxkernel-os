@@ -58,6 +58,7 @@ pub fn main() -> usize {
 
     {
         command_function_list.insert("cd", cd);
+        command_function_list.insert("ls", ls);
         command_function_list.insert("exit", exit);
     }
 

@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::{string::String, vec::Vec};
 
 #[repr(C)]
 pub enum OpenMode {
@@ -82,6 +82,12 @@ impl InodeTy {
     }
 }
 
+impl Default for InodeTy {
+    fn default() -> Self {
+        Self::Dir
+    }
+}
+
 pub fn ftype(fd: usize) -> InodeTy {
     const FTYPE_SYSCALL_ID: u64 = 14;
     let ty = crate::syscall(FTYPE_SYSCALL_ID, fd, 0, 0, 0, 0);
@@ -89,4 +95,51 @@ pub fn ftype(fd: usize) -> InodeTy {
         return InodeTy::File;
     }
     InodeTy::from(ty)
+}
+
+pub struct FileInfo {
+    pub name: String,
+    pub ty: InodeTy,
+}
+
+pub fn list_dir(path: String) -> Vec<FileInfo> {
+    fn dir_item_num(path: String) -> usize {
+        const DIR_ITEM_NUM_SYSCALL: u64 = 16;
+        crate::syscall(
+            DIR_ITEM_NUM_SYSCALL,
+            path.as_ptr() as usize,
+            path.len(),
+            0,
+            0,
+            0,
+        )
+    }
+
+    #[derive(Default, Clone)]
+    struct TemporyInfo {
+        name: &'static [u8],
+        ty: InodeTy,
+    }
+
+    let len = dir_item_num(path.clone());
+    let buf = alloc::vec![TemporyInfo::default(); len];
+
+    const LIST_DIR_SYSCALL: u64 = 15;
+    crate::syscall(
+        LIST_DIR_SYSCALL,
+        path.as_ptr() as usize,
+        path.len(),
+        buf.as_ptr() as usize,
+        0,
+        0,
+    );
+
+    let mut infos = Vec::new();
+    for info in buf.iter() {
+        infos.push(FileInfo {
+            name: String::from_utf8(info.name.to_vec()).unwrap(),
+            ty: info.ty,
+        })
+    }
+    infos
 }

@@ -21,6 +21,8 @@ enum SyscallIndex {
     ChangeCwd,
     GetCwd,
     FType,
+    ListDir,
+    DirItemNum,
 }
 
 impl From<usize> for SyscallIndex {
@@ -61,5 +63,7 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::ChangeCwd => change_cwd(arg1, arg2),
         SyscallIndex::GetCwd => get_cwd(),
         SyscallIndex::FType => ftype(arg1),
+        SyscallIndex::ListDir => list_dir(arg1, arg2, arg3),
+        SyscallIndex::DirItemNum => dir_item_num(arg1, arg2),
     }
 }
