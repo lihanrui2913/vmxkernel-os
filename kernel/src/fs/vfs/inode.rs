@@ -3,7 +3,7 @@ use spin::RwLock;
 
 pub type InodeRef = Arc<RwLock<dyn Inode>>;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum InodeTy {
     Dir = 0,
     File = 1,

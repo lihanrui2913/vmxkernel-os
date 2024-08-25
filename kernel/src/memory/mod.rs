@@ -51,3 +51,7 @@ pub unsafe fn ref_current_page_table() -> OffsetPageTable<'static> {
     let physical_memory_offset = VirtAddr::new(PHYSICAL_MEMORY_OFFSET.clone());
     OffsetPageTable::new(&mut *page_table, physical_memory_offset)
 }
+
+pub fn addr_to_mut_ref<T>(addr: VirtAddr) -> &'static mut T {
+    unsafe { &mut (*addr.as_mut_ptr()) }
+}

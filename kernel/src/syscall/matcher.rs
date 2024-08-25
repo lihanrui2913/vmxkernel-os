@@ -18,6 +18,9 @@ enum SyscallIndex {
     Fsize,
     Execve,
     IsExited,
+    ChangeCwd,
+    GetCwd,
+    FType,
 }
 
 impl From<usize> for SyscallIndex {
@@ -55,5 +58,8 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::Fsize => fsize(arg1),
         SyscallIndex::Execve => execve(arg1, arg2),
         SyscallIndex::IsExited => is_exited(arg1),
+        SyscallIndex::ChangeCwd => change_cwd(arg1, arg2),
+        SyscallIndex::GetCwd => get_cwd(),
+        SyscallIndex::FType => ftype(arg1),
     }
 }

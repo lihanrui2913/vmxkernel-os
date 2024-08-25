@@ -10,11 +10,13 @@ use alloc::{
     vec::Vec,
 };
 use vstd::{
-    fs::{open, read},
+    fs::{get_cwd, open, read},
     print, println,
 };
 
+mod commands;
 mod run;
+use commands::*;
 
 fn shell_read_line(fd: usize, buf: &mut String) {
     buf.clear();
@@ -38,7 +40,10 @@ fn shell_read_line(fd: usize, buf: &mut String) {
 }
 
 fn get_prompt() -> String {
-    format!("\x1b[36m[\x1b[34mroot@raca \x1b[33m/\x1b[36m]\x1b[34m:) \x1b[0m",)
+    format!(
+        "\x1b[36m[\x1b[34mroot@raca \x1b[33m{}\x1b[36m]\x1b[34m:) \x1b[0m",
+        get_cwd()
+    )
 }
 
 type CommandFunction = fn(args: Vec<String>);
@@ -52,6 +57,7 @@ pub fn main() -> usize {
     let mut command_function_list = BTreeMap::<&str, CommandFunction>::new();
 
     {
+        command_function_list.insert("cd", cd);
         command_function_list.insert("exit", exit);
     }
 

@@ -1,10 +1,12 @@
-use crate::fs::operation::OpenMode;
+use crate::fs::operation::{get_inode_by_fd, OpenMode};
+use crate::memory::addr_to_mut_ref;
 use crate::task::process::is_process_exited;
 use crate::task::scheduler::SCHEDULER;
 use alloc::alloc::{alloc, dealloc};
 use alloc::string::String;
 use core::alloc::Layout;
 use core::{slice, str, usize};
+use x86_64::VirtAddr;
 
 pub fn print(buffer: *const u8, length: usize) -> usize {
     if length == 0 {
@@ -100,4 +102,35 @@ pub fn execve(buf_addr: usize, buf_len: usize) -> usize {
 
 pub fn is_exited(pid: usize) -> usize {
     is_process_exited(pid) as usize
+}
+
+pub fn change_cwd(path_addr: usize, path_len: usize) -> usize {
+    let buf = unsafe { slice::from_raw_parts(path_addr as _, path_len) };
+    let path = String::from(core::str::from_utf8(buf).unwrap());
+
+    crate::fs::operation::change_cwd(path);
+
+    0
+}
+
+pub fn get_cwd() -> usize {
+    let path = crate::fs::operation::get_cwd();
+    let new_path = alloc::vec![0u8;path.len()].leak();
+    new_path[..path.len()].copy_from_slice(path.as_bytes());
+    let ret_struct_ptr = alloc::vec![0u8; 16].leak().as_ptr() as u64;
+    let path_ptr = addr_to_mut_ref(VirtAddr::new(ret_struct_ptr));
+    *path_ptr = new_path;
+    let len_ptr = addr_to_mut_ref(VirtAddr::new(ret_struct_ptr + 8));
+    *len_ptr = path.len();
+    ret_struct_ptr as usize
+}
+
+pub fn ftype(fd: usize) -> usize {
+    let inode = get_inode_by_fd(fd);
+
+    if let Some(inode) = inode {
+        return inode.read().inode_type() as usize;
+    }
+
+    usize::MAX
 }

@@ -127,3 +127,12 @@ unsafe fn free_pages_recursion(
 
     frame_allocator.deallocate_frame(PhysFrame::containing_address(physical_address));
 }
+
+pub fn write_for_syscall<T: Clone>(addr: VirtAddr, buf: &[T]) {
+    let reffer: *mut T = addr.as_mut_ptr();
+    for (idx, byte) in buf.iter().enumerate() {
+        unsafe {
+            reffer.add(idx).write(byte.clone());
+        }
+    }
+}
