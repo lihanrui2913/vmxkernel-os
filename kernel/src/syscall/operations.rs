@@ -1,4 +1,5 @@
 use crate::fs::operation::OpenMode;
+use crate::task::process::is_process_exited;
 use crate::task::scheduler::SCHEDULER;
 use alloc::alloc::{alloc, dealloc};
 use alloc::string::String;
@@ -92,4 +93,8 @@ pub fn execve(buf_addr: usize, buf_len: usize) -> usize {
         .read()
         .id
         .0 as usize
+}
+
+pub fn is_exited(pid: usize) -> usize {
+    is_process_exited(pid) as usize
 }

@@ -17,6 +17,7 @@ enum SyscallIndex {
     Write,
     Fsize,
     Execve,
+    IsExited,
 }
 
 impl From<usize> for SyscallIndex {
@@ -53,5 +54,6 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::Write => write(arg1, arg2, arg3),
         SyscallIndex::Fsize => fsize(arg1),
         SyscallIndex::Execve => execve(arg1, arg2),
+        SyscallIndex::IsExited => is_exited(arg1),
     }
 }
