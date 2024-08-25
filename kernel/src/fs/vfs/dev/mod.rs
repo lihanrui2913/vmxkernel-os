@@ -1,5 +1,6 @@
 use alloc::{format, string::ToString, sync::Arc};
 use spin::{Mutex, RwLock};
+use terminal::Terminal;
 
 use crate::{device::block::HD_LIST, fs::ROOT};
 
@@ -11,6 +12,7 @@ use super::{
 pub mod block;
 pub mod gpt_parser;
 pub mod partition;
+pub mod terminal;
 
 pub static ROOT_PARTITION: Mutex<Option<InodeRef>> = Mutex::new(None);
 
@@ -42,6 +44,9 @@ pub fn init() {
 
     let dev_fs = RootFS::new();
     mount_to(dev_fs.clone(), ROOT.lock().clone(), "dev".to_string());
+
+    let terminal = Arc::new(RwLock::new(Terminal::new()));
+    mount_to(terminal.clone(), dev_fs.clone(), "terminal".to_string());
 
     provide_hard_disks(dev_fs.clone());
 }

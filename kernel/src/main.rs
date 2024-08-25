@@ -4,10 +4,10 @@
 use core::panic::PanicInfo;
 use kernel::alloc::string::String;
 use kernel::device::hpet::HPET;
-use kernel::device::keyboard::print_keypresses;
 use kernel::device::rtc::RtcDateTime;
 use kernel::device::terminal::terminal_manual_flush;
-use kernel::fs::operation::{init_file_descriptor_manager, kernel_open};
+use kernel::fs::operation::kernel_open;
+use kernel::fs::vfs::dev::terminal::keyboard_parse_thread;
 use kernel::task::process::Process;
 use kernel::task::thread::Thread;
 use kernel::START_SCHEDULE;
@@ -22,7 +22,7 @@ extern "C" fn _start() -> ! {
     kernel::init();
     log::info!("HPET elapsed: {} ns", HPET.elapsed_ns());
 
-    Thread::new_kernel_thread(print_keypresses);
+    Thread::new_kernel_thread(keyboard_parse_thread);
     Thread::new_kernel_thread(terminal_manual_flush);
 
     let ansi_red_test_string = "\x1b[31mRed\x1b[0m";
@@ -42,8 +42,7 @@ extern "C" fn _start() -> ! {
     let size = inode.read().size();
     let buf = kernel::alloc::vec![0u8; size].leak();
     inode.read().read_at(0, buf);
-    let process = Process::new_user_process("init", buf);
-    init_file_descriptor_manager(process.read().id);
+    Process::new_user_process("init", buf);
 
     START_SCHEDULE.store(true, core::sync::atomic::Ordering::SeqCst);
     x86_64::instructions::interrupts::enable();

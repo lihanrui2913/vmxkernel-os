@@ -12,6 +12,7 @@ use x86_64::structures::paging::OffsetPageTable;
 use x86_64::VirtAddr;
 
 use super::thread::{SharedThread, Thread};
+use crate::fs::operation::init_file_descriptor_manager;
 use crate::memory::{ExtendedPageTable, MappingType, MemoryManager};
 use crate::memory::{FRAME_ALLOCATOR, KERNEL_PAGE_TABLE};
 
@@ -72,6 +73,7 @@ impl Process {
             PROCESSES.write().push_back(process.clone());
             process
         });
+        init_file_descriptor_manager(process.read().id);
 
         return process;
     }

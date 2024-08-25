@@ -1,5 +1,4 @@
 use crossbeam_queue::ArrayQueue;
-use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
 use spin::Lazy;
 
 const SCANCODE_QUEUE_SIZE: usize = 128;
@@ -12,23 +11,12 @@ pub fn add_scancode(scancode: u8) {
     }
 }
 
-pub fn print_keypresses() {
-    let mut keyboard = Keyboard::new(
-        ScancodeSet1::new(),
-        layouts::Us104Key,
-        HandleControl::Ignore,
-    );
+/// Return the scan code of the keyboard buffer, returns None is the buffer is empty.
+pub fn get_scancode() -> Option<u8> {
+    SCANCODE_QUEUE.pop()
+}
 
-    loop {
-        if let Some(scancode) = SCANCODE_QUEUE.pop() {
-            if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
-                if let Some(key) = keyboard.process_keyevent(key_event) {
-                    match key {
-                        DecodedKey::Unicode(character) => crate::print!("{}", character),
-                        DecodedKey::RawKey(key) => crate::print!("{:?}", key),
-                    }
-                }
-            }
-        }
-    }
+/// Return whether the keyboard buffer is empty.
+pub fn has_scancode() -> bool {
+    !SCANCODE_QUEUE.is_empty()
 }

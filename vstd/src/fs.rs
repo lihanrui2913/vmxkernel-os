@@ -23,9 +23,16 @@ pub fn close(fd: usize) -> usize {
     crate::syscall(CLOSE_SYSCALL_ID, fd, 0, 0, 0, 0)
 }
 
-pub fn read(fd: usize, buf: &[u8]) -> usize {
+pub fn read(fd: usize, buf: &mut [u8]) -> usize {
     const READ_SYSCALL_ID: u64 = 7;
-    crate::syscall(READ_SYSCALL_ID, fd, buf.as_ptr() as usize, buf.len(), 0, 0)
+    crate::syscall(
+        READ_SYSCALL_ID,
+        fd,
+        buf.as_mut_ptr() as usize,
+        buf.len(),
+        0,
+        0,
+    )
 }
 
 pub fn write(fd: usize, buf: &[u8]) -> usize {

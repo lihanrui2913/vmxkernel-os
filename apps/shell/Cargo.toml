@@ -3,5 +3,8 @@ name = "shell"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+escape-bytes = "0.1.1"
+
 [dependencies.vstd]
 path = "../../vstd"

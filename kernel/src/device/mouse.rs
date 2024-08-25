@@ -9,8 +9,8 @@ pub fn init() {
     mouse.init().unwrap_or_else(|err| {
         log::error!("Mouse initialization failed: {}", err);
     });
-    mouse.set_complete_handler(|mouse_state: MouseState| {
-        crate::println!("{:?}", mouse_state);
+    mouse.set_complete_handler(|_mouse_state: MouseState| {
+        // crate::println!("{:?}", mouse_state);
     });
     log::debug!("Mouse Type: {:?}", mouse.mouse_type);
     log::info!("Mouse initialized successfully!");
