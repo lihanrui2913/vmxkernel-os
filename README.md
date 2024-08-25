@@ -1,6 +1,6 @@
-# TrashOS
+# VMXKERNEL-OS
 
-A stupidly simple OS written in Rust. Tons of crates are used.
+A stupidly simple OS written in Rust. Tons of crates are used. Based on TrashOS
 
 ### Build
 
