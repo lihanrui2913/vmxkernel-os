@@ -14,7 +14,6 @@ use x86_64::VirtAddr;
 use super::thread::{SharedThread, Thread};
 use crate::memory::{ExtendedPageTable, MappingType, MemoryManager};
 use crate::memory::{FRAME_ALLOCATOR, KERNEL_PAGE_TABLE};
-use crate::ref_to_mut;
 
 pub(super) type SharedProcess = Arc<RwLock<Box<Process>>>;
 pub(super) type WeakSharedProcess = Weak<RwLock<Box<Process>>>;
@@ -44,7 +43,6 @@ pub struct Process {
     pub name: String,
     pub page_table: OffsetPageTable<'static>,
     pub threads: Vec<SharedThread>,
-    pub exited: bool,
 }
 
 impl Process {
@@ -54,7 +52,6 @@ impl Process {
             name: String::from(name),
             page_table: unsafe { KERNEL_PAGE_TABLE.lock().deep_copy() },
             threads: Default::default(),
-            exited: false,
         };
 
         process
@@ -80,8 +77,6 @@ impl Process {
     }
 
     pub fn exit_process(&self) {
-        ref_to_mut(self).exited = true;
-
         let mut processes = PROCESSES.write();
         if let Some(index) = processes
             .iter()
@@ -130,9 +125,9 @@ impl Drop for Process {
 pub fn is_process_exited(pid: usize) -> bool {
     for process in PROCESSES.read().iter() {
         if process.read().id == ProcessId::from(pid as u64) {
-            return process.read().exited;
+            return false;
         }
     }
 
-    return false;
+    return true;
 }
