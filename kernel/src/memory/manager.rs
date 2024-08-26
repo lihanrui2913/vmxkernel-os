@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 use x86_64::instructions::interrupts;
 use x86_64::structures::paging::mapper::MapToError;
-use x86_64::structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame};
+use x86_64::structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame, Size1GiB, Size2MiB};
 use x86_64::structures::paging::{Mapper, OffsetPageTable, PageTableFlags};
 use x86_64::structures::paging::{Page, PageSize, Size4KiB};
 use x86_64::{PhysAddr, VirtAddr};
@@ -139,7 +139,26 @@ impl<S: PageSize> MemoryManager<S> {
                         .flush();
                     Self::do_map_to(virt, phys, flags);
                 }
-                MapToError::ParentEntryHugePage => log::warn!("Parent entry huge page"),
+                MapToError::ParentEntryHugePage => {
+                    log::warn!("Parent entry huge page");
+                    let result = kernel_page_table.unmap(Page::<Size2MiB>::containing_address(
+                        VirtAddr::new(virt as u64),
+                    ));
+
+                    if let Ok((_frame, flusher)) = result {
+                        flusher.flush();
+                    } else {
+                        let result = kernel_page_table.unmap(Page::<Size1GiB>::containing_address(
+                            VirtAddr::new(virt as u64),
+                        ));
+                        if let Ok((_frame, flusher)) = result {
+                            flusher.flush();
+                        } else {
+                            panic!("Cannot unmap huge page");
+                        }
+                    }
+                    Self::do_map_to(virt, phys, flags);
+                }
             },
             Ok(flusher) => flusher.flush(),
         }
