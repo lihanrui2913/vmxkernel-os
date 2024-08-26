@@ -471,6 +471,7 @@ dependencies = [
  "pc-keyboard",
  "pci_types",
  "spin",
+ "syscall_index",
  "time",
  "uart_16550",
  "uuid",
@@ -752,6 +753,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "syscall_index"
+version = "0.1.0"
+
+[[package]]
 name = "tempfile"
 version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -852,6 +857,7 @@ name = "vstd"
 version = "0.1.0"
 dependencies = [
  "spin",
+ "syscall_index",
  "x86_64 0.15.1",
 ]
 

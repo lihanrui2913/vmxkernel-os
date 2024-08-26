@@ -1,8 +1,16 @@
 use core::alloc::{GlobalAlloc, Layout};
 
+use crate::SyscallIndex;
+
 fn malloc(layout: Layout) -> Result<u64, ()> {
-    const MALLOC_SYSCALL_ID: u64 = 2;
-    let addr = crate::syscall(MALLOC_SYSCALL_ID, layout.size(), layout.align(), 0, 0, 0);
+    let addr = crate::syscall(
+        SyscallIndex::Malloc as u64,
+        layout.size(),
+        layout.align(),
+        0,
+        0,
+        0,
+    );
 
     if addr == 0 {
         Err(())
@@ -12,9 +20,8 @@ fn malloc(layout: Layout) -> Result<u64, ()> {
 }
 
 fn free(addr: u64, layout: Layout) {
-    const FREE_SYSCALL_ID: u64 = 4;
     crate::syscall(
-        FREE_SYSCALL_ID,
+        SyscallIndex::Free as u64,
         addr as usize,
         layout.size(),
         layout.align(),

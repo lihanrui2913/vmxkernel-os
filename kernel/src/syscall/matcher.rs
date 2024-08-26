@@ -1,40 +1,6 @@
-use core::arch::asm;
-use core::mem::{transmute, variant_count};
-
 use super::operations::*;
-
-#[derive(Debug)]
-#[allow(dead_code)]
-enum SyscallIndex {
-    Null,
-    Print,
-    Malloc,
-    Exit,
-    Free,
-    Open,
-    Close,
-    Read,
-    Write,
-    Fsize,
-    Execve,
-    IsExited,
-    ChangeCwd,
-    GetCwd,
-    FType,
-    ListDir,
-    DirItemNum,
-    IoCtl,
-}
-
-impl From<usize> for SyscallIndex {
-    fn from(number: usize) -> Self {
-        let syscall_length = variant_count::<Self>();
-        if number >= syscall_length {
-            panic!("Invalid syscall index: {}", number);
-        }
-        unsafe { transmute(number as u8) }
-    }
-}
+use core::arch::asm;
+use syscall_index::SyscallIndex;
 
 #[allow(unused_variables)]
 pub extern "C" fn syscall_matcher(

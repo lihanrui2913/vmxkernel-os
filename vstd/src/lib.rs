@@ -10,6 +10,8 @@ pub mod task;
 
 use core::panic::PanicInfo;
 
+use syscall_index::SyscallIndex;
+
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("User Panic:{}", info);

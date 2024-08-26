@@ -1,5 +1,5 @@
 [workspace]
-members = ["apps/init", "apps/shell", "builder", "kernel", "vstd"]
+members = ["apps/init", "apps/shell", "builder", "kernel", "vstd", "kernel/crates/syscall_index"]
 resolver = "2"
 default-members = ["builder"]
 

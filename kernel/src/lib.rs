@@ -2,7 +2,6 @@
 #![feature(abi_x86_interrupt)]
 #![feature(alloc_error_handler)]
 #![feature(naked_functions)]
-#![feature(variant_count)]
 #![feature(allocator_api)]
 
 use core::sync::atomic::AtomicBool;

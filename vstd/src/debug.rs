@@ -2,9 +2,10 @@ use core::fmt::{self, Write};
 
 use spin::Mutex;
 
+use crate::SyscallIndex;
+
 pub fn print(str: &str) -> usize {
-    const PRINT_SYSCALL_ID: u64 = 1;
-    crate::syscall(PRINT_SYSCALL_ID, str.as_ptr() as usize, str.len(), 0, 0, 0)
+    crate::syscall(SyscallIndex::Print as u64, str.as_ptr() as usize, str.len(), 0, 0, 0)
 }
 
 struct AppOutputStream;
