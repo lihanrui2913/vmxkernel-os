@@ -26,6 +26,13 @@ pub enum SyscallIndex {
     IoCtl,
 }
 
+#[derive(Debug)]
+#[allow(dead_code)]
+pub enum FbDevIoctlCommand {
+    GetWidth,
+    GetHeight,
+}
+
 impl From<usize> for SyscallIndex {
     fn from(number: usize) -> Self {
         let syscall_length = variant_count::<Self>();

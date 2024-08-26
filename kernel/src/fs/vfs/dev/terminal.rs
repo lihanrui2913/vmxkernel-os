@@ -87,7 +87,7 @@ impl Inode for Terminal {
     fn ioctl(&self, cmd: usize, _arg: usize) -> usize {
         match cmd {
             _ => {
-                log::error!("Unknown cmd in terminal ioctl");
+                log::warn!("Unknown cmd in terminal ioctl");
                 return 0;
             }
         }

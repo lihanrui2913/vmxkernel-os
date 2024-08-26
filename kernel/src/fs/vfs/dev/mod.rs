@@ -1,4 +1,5 @@
 use alloc::{format, string::ToString, sync::Arc};
+use fb::FrameBuffer;
 use spin::{Mutex, RwLock};
 use terminal::Terminal;
 
@@ -10,6 +11,7 @@ use super::{
 };
 
 pub mod block;
+pub mod fb;
 pub mod gpt_parser;
 pub mod partition;
 pub mod terminal;
@@ -47,6 +49,9 @@ pub fn init() {
 
     let terminal = Arc::new(RwLock::new(Terminal::new()));
     mount_to(terminal.clone(), dev_fs.clone(), "terminal".to_string());
+
+    let fb = Arc::new(RwLock::new(FrameBuffer::new()));
+    mount_to(fb.clone(), dev_fs.clone(), "fb".to_string());
 
     provide_hard_disks(dev_fs.clone());
 }

@@ -1,10 +1,13 @@
 use core::slice::from_raw_parts_mut;
-use limine::request::FramebufferRequest;
+use limine::{request::FramebufferRequest, response::FramebufferResponse};
 use os_terminal::{DrawTarget, Rgb888};
+use spin::Lazy;
 
 #[used]
 #[link_section = ".requests"]
 static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
+pub static FRAMEBUFFER_RESPONSE: Lazy<&FramebufferResponse> =
+    Lazy::new(|| FRAMEBUFFER_REQUEST.get_response().unwrap());
 
 #[derive(Debug, Clone, Copy)]
 pub enum PixelFormat {
@@ -25,8 +28,7 @@ pub struct Display {
 
 impl Display {
     pub fn new() -> Self {
-        let response = FRAMEBUFFER_REQUEST.get_response().unwrap();
-        let frame_buffer = response.framebuffers().next().take().unwrap();
+        let frame_buffer = FRAMEBUFFER_RESPONSE.framebuffers().next().take().unwrap();
 
         let width = frame_buffer.width() as _;
         let height = frame_buffer.height() as _;
