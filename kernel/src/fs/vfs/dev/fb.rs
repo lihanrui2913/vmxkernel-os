@@ -100,13 +100,9 @@ impl Inode for FrameBuffer {
     }
 
     fn ioctl(&self, cmd: usize, _arg: usize) -> usize {
-        match cmd {
+        match FbDevIoctlCommand::from(cmd) {
             FbDevIoctlCommand::GetWidth => self.width(),
             FbDevIoctlCommand::GetHeight => self.height(),
-            _ => {
-                log::warn!("Unknown cmd in fbdev ioctl");
-                return 0;
-            }
         }
     }
 }

@@ -42,3 +42,13 @@ impl From<usize> for SyscallIndex {
         unsafe { transmute(number as u8) }
     }
 }
+
+impl From<usize> for FbDevIoctlCommand {
+    fn from(number: usize) -> Self {
+        let length = variant_count::<Self>();
+        if number >= length {
+            panic!("Invalid syscall index: {}", number);
+        }
+        unsafe { transmute(number as u8) }
+    }
+}
