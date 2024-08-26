@@ -13,7 +13,7 @@ pub static TERMINAL: Lazy<Mutex<Terminal<Display>>> = Lazy::new(|| {
     Mutex::new(terminal)
 });
 
-pub fn set_font(size: f32, font: &[u8]) {
+pub fn set_font(size: f32, font: &'static [u8]) {
     TERMINAL
         .lock()
         .set_font_manager(Box::new(TrueTypeFont::new(size, font)));
