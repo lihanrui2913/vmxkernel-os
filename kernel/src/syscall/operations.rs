@@ -174,3 +174,7 @@ pub fn dir_item_num(path_addr: usize, path_len: usize) -> usize {
 
     crate::fs::operation::list_dir(path).len()
 }
+
+pub fn ioctl(fd: usize, cmd: usize, arg: usize) -> usize {
+    crate::fs::operation::ioctl(fd, cmd, arg)
+}

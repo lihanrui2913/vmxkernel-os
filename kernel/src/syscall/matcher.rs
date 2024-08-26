@@ -23,6 +23,7 @@ enum SyscallIndex {
     FType,
     ListDir,
     DirItemNum,
+    IoCtl,
 }
 
 impl From<usize> for SyscallIndex {
@@ -65,5 +66,6 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::FType => ftype(arg1),
         SyscallIndex::ListDir => list_dir(arg1, arg2, arg3),
         SyscallIndex::DirItemNum => dir_item_num(arg1, arg2),
+        SyscallIndex::IoCtl => ioctl(arg1, arg2, arg3),
     }
 }

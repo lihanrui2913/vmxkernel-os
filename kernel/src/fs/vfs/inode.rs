@@ -51,6 +51,9 @@ pub trait Inode: Sync + Send {
     fn create(&self, _name: String, _ty: InodeTy) -> Option<InodeRef> {
         unimplemented!()
     }
+    fn ioctl(&self, _cmd: usize, _arg: usize) -> usize {
+        unimplemented!()
+    }
     fn list(&self) -> Vec<FileInfo> {
         Vec::new()
     }

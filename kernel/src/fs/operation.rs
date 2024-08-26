@@ -1,4 +1,7 @@
-use core::sync::atomic::{AtomicUsize, Ordering};
+use core::{
+    sync::atomic::{AtomicUsize, Ordering},
+    usize,
+};
 
 use crate::{ref_to_mut, task::process::ProcessId};
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
@@ -325,4 +328,13 @@ pub fn mount(to: String, partition_path: String) -> Option<()> {
     let volumne = Fat32Volume::new(partition_inode.clone());
     mount_to(volumne, to_father, to_name);
     Some(())
+}
+
+pub fn ioctl(fd: FileDescriptor, cmd: usize, arg: usize) -> usize {
+    let inode = get_inode_by_fd(fd);
+    if let Some(inode) = inode {
+        inode.read().ioctl(cmd, arg);
+    }
+
+    return usize::MAX;
 }

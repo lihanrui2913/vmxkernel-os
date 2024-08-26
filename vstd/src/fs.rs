@@ -143,3 +143,8 @@ pub fn list_dir(path: String) -> Vec<FileInfo> {
     }
     infos
 }
+
+pub fn ioctl(fd: usize, cmd: usize, arg: usize) -> usize {
+    const IOCTL_SYSCALL: u64 = 16;
+    crate::syscall(IOCTL_SYSCALL, fd, cmd, arg, 0, 0)
+}
