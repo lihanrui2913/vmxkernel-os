@@ -18,7 +18,6 @@ good_memory_allocator = "0.1.7"
 gpt_disk_io = "0.16.0"
 bit_field = "0.10.2"
 colorz = "1.1.2"
-os-terminal = "0.3.6"
 pci_types = "0.10.0"
 nvme = "0.1.0"
 
@@ -48,6 +47,10 @@ default-features = false
 version = "0.36.3"
 features = ["read_core", "elf", "unaligned"]
 default-features = false
+
+[dependencies.os-terminal]
+version = "0.3.6"
+features = ["bitmap", "truetype"]
 
 [dependencies.log]
 version = "0.4.22"

@@ -1,6 +1,6 @@
 use alloc::boxed::Box;
 use core::fmt::{self, Write};
-use os_terminal::font::BitmapFont;
+use os_terminal::font::{BitmapFont, TrueTypeFont};
 use os_terminal::Terminal;
 use spin::{Lazy, Mutex};
 use x86_64::instructions::interrupts;
@@ -12,6 +12,12 @@ pub static TERMINAL: Lazy<Mutex<Terminal<Display>>> = Lazy::new(|| {
     terminal.set_font_manager(Box::new(BitmapFont));
     Mutex::new(terminal)
 });
+
+pub fn set_font(size: f32, font: &[u8]) {
+    TERMINAL
+        .lock()
+        .set_font_manager(Box::new(TrueTypeFont::new(size, font)));
+}
 
 #[inline]
 pub fn _print(args: fmt::Arguments) {
