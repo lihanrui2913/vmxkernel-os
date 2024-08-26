@@ -1,4 +1,4 @@
-use crate::{println, SyscallIndex};
+use crate::SyscallIndex;
 
 pub fn exit(code: usize) -> ! {
     crate::syscall(SyscallIndex::Exit as u64, code, 0, 0, 0, 0);
@@ -23,9 +23,8 @@ pub fn wait(pid: usize) -> usize {
         if is_exited != 0 {
             break;
         }
+        unsafe { core::arch::asm!("pause") };
     }
-
-    println!("OK");
 
     0
 }

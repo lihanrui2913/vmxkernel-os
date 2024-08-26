@@ -15,8 +15,8 @@ impl FrameBuffer {
     pub fn new() -> Self {
         let frame_buffer = FRAMEBUFFER_RESPONSE.framebuffers().next().take().unwrap();
 
-        let width = frame_buffer.width() as _;
-        let height = frame_buffer.height() as _;
+        let width = frame_buffer.width() as usize;
+        let height = frame_buffer.height() as usize;
         let bpp = frame_buffer.bpp() as usize;
 
         let buffer =
@@ -69,9 +69,8 @@ impl Inode for FrameBuffer {
     fn read_at(&self, _offset: usize, buf: &mut [u8]) -> usize {
         let read_buf_ptr = buf.as_ptr();
         let read_buf_len = buf.len();
-        let read_buf: &mut [u32] = unsafe {
-            core::slice::from_raw_parts_mut(read_buf_ptr as _, read_buf_len / self.bpp())
-        };
+        let read_buf: &mut [u32] =
+            unsafe { core::slice::from_raw_parts_mut(read_buf_ptr as _, read_buf_len / 4) };
 
         for index in 0..read_buf.len() {
             read_buf[index] = self.fbaddr[index];
@@ -87,10 +86,10 @@ impl Inode for FrameBuffer {
             return 0;
         }
 
-        let write_buf_ptr = buf.as_ptr();
+        let write_buf_ptr = buf.as_ptr() as _;
         let write_buf_len = buf.len();
         let write_buf: &[u32] =
-            unsafe { core::slice::from_raw_parts(write_buf_ptr as _, write_buf_len / self.bpp()) };
+            unsafe { core::slice::from_raw_parts(write_buf_ptr, write_buf_len / 4) };
 
         for index in 0..write_buf.len() {
             ref_to_mut(self).fbaddr[index] = write_buf[index];

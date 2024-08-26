@@ -333,7 +333,7 @@ pub fn mount(to: String, partition_path: String) -> Option<()> {
 pub fn ioctl(fd: FileDescriptor, cmd: usize, arg: usize) -> usize {
     let inode = get_inode_by_fd(fd);
     if let Some(inode) = inode {
-        inode.read().ioctl(cmd, arg);
+        return inode.read().ioctl(cmd, arg);
     }
 
     return usize::MAX;

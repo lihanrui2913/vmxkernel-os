@@ -9,13 +9,15 @@ pub mod mm;
 pub mod task;
 
 use core::panic::PanicInfo;
+use core::usize;
 
-use syscall_index::SyscallIndex;
+pub use syscall_index::FbDevIoctlCommand;
+pub use syscall_index::SyscallIndex;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("User Panic:{}", info);
-    loop {}
+    task::exit(usize::MAX)
 }
 
 #[naked]
