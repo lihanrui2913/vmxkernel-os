@@ -5,6 +5,10 @@ use vstd::{
 };
 
 pub fn try_run(path: String) -> Option<()> {
+    if path.len() == 0 {
+        return None;
+    }
+
     let fd = open(path, OpenMode::Read);
     if fd == usize::MAX {
         return None;
