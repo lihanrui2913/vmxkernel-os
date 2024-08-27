@@ -50,6 +50,8 @@ fn main() {
         cmd.arg("-m").arg("256m");
         cmd.arg("-smp").arg(format!("cores={}", args.cores));
         cmd.arg("-cpu").arg("qemu64,+x2apic");
+        cmd.arg("-usb");
+        cmd.arg("-device").arg("qemu-xhci,id=xhci");
 
         if args.kvm {
             cmd.arg("--enable-kvm");

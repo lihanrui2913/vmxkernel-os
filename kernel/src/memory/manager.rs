@@ -1,7 +1,9 @@
 use core::marker::PhantomData;
 use x86_64::instructions::interrupts;
 use x86_64::structures::paging::mapper::MapToError;
-use x86_64::structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame, Size1GiB, Size2MiB};
+use x86_64::structures::paging::{
+    FrameAllocator, FrameDeallocator, PhysFrame, Size1GiB, Size2MiB, Translate,
+};
 use x86_64::structures::paging::{Mapper, OffsetPageTable, PageTableFlags};
 use x86_64::structures::paging::{Page, PageSize, Size4KiB};
 use x86_64::{PhysAddr, VirtAddr};
@@ -129,15 +131,31 @@ impl<S: PageSize> MemoryManager<S> {
             Err(err) => match err {
                 MapToError::FrameAllocationFailed => panic!("Frame allocation failed!!!"),
                 MapToError::PageAlreadyMapped(frame) => {
-                    log::warn!("Page already mapped: frame: {:?}", frame);
-                    kernel_page_table
-                        .unmap(Page::<Size4KiB>::containing_address(VirtAddr::new(
-                            virt as u64,
-                        )))
-                        .expect("Cannot unmap to")
-                        .1
+                    if kernel_page_table
+                        .translate_addr(VirtAddr::new(virt as u64))
+                        .unwrap()
+                        != frame.start_address()
+                    {
+                        log::warn!("Page already mapped: frame: {:?}", frame);
+                        kernel_page_table
+                            .unmap(Page::<Size4KiB>::containing_address(VirtAddr::new(
+                                virt as u64,
+                            )))
+                            .expect("Cannot unmap to")
+                            .1
+                            .flush();
+
+                        unsafe {
+                            kernel_page_table.map_to(
+                                Page::<Size4KiB>::containing_address(VirtAddr::new(virt as u64)),
+                                PhysFrame::containing_address(PhysAddr::new(phys as u64)),
+                                flags,
+                                &mut *FRAME_ALLOCATOR.lock(),
+                            )
+                        }
+                        .expect("Cannot map to")
                         .flush();
-                    Self::do_map_to(virt, phys, flags);
+                    }
                 }
                 MapToError::ParentEntryHugePage => {
                     log::warn!("Parent entry huge page");
@@ -157,7 +175,17 @@ impl<S: PageSize> MemoryManager<S> {
                             panic!("Cannot unmap huge page");
                         }
                     }
-                    Self::do_map_to(virt, phys, flags);
+
+                    unsafe {
+                        kernel_page_table.map_to(
+                            Page::<Size4KiB>::containing_address(VirtAddr::new(virt as u64)),
+                            PhysFrame::containing_address(PhysAddr::new(phys as u64)),
+                            flags,
+                            &mut *FRAME_ALLOCATOR.lock(),
+                        )
+                    }
+                    .expect("Cannot map to")
+                    .flush();
                 }
             },
             Ok(flusher) => flusher.flush(),

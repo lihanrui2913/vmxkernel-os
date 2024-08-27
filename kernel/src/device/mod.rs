@@ -9,3 +9,4 @@ pub mod pci;
 pub mod rtc;
 pub mod serial;
 pub mod terminal;
+pub mod xhci;

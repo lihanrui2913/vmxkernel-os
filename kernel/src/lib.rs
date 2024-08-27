@@ -28,6 +28,7 @@ pub fn init() {
     device::mouse::init();
     device::pci::init();
     device::nvme::init();
+    device::xhci::init();
     syscall::init();
     task::scheduler::init();
 }

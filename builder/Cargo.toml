@@ -29,3 +29,8 @@ target = "x86_64-unknown-none"
 path = "../apps/shell"
 artifact = "bin"
 target = "x86_64-unknown-none"
+
+[dependencies.ui]
+path = "../apps/ui"
+artifact = "bin"
+target = "x86_64-unknown-none"

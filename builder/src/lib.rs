@@ -29,6 +29,7 @@ impl ImageBuilder {
 
         let init_path = Path::new(env!("CARGO_BIN_FILE_INIT_init")).to_path_buf();
         let shell_path = Path::new(env!("CARGO_BIN_FILE_SHELL_shell")).to_path_buf();
+        let ui_path = Path::new(env!("CARGO_BIN_FILE_UI_ui")).to_path_buf();
 
         let mut files = BTreeMap::new();
         files.insert(KERNEL.into(), kernel_path);
@@ -36,6 +37,7 @@ impl ImageBuilder {
         files.insert(LIMINE_CONFIG, limine_config);
         files.insert("init.elf", init_path);
         files.insert("shell.elf", shell_path);
+        files.insert("ui.elf", ui_path);
 
         let fat_partition = NamedTempFile::new().context("failed to create temp file")?;
         FatBuilder::create(files, fat_partition.path())

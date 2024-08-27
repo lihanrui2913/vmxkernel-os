@@ -80,9 +80,10 @@ impl Inode for FrameBuffer {
     }
 
     fn write_at(&self, offset: usize, buf: &[u8]) -> usize {
-        let real_buf_len = self.size() / self.bpp() - offset;
+        let real_buf_len = self.size() * 4 - offset + 1;
 
         if buf.len() > real_buf_len || !buf.len().is_multiple_of(4) {
+            log::warn!("Unsupported buffer len");
             return 0;
         }
 
