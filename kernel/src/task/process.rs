@@ -32,9 +32,11 @@ impl ProcessId {
         static NEXT_ID: AtomicU64 = AtomicU64::new(0);
         ProcessId(NEXT_ID.fetch_add(1, Ordering::Relaxed))
     }
+}
 
-    pub fn from(pid: u64) -> Self {
-        ProcessId(pid)
+impl From<u64> for ProcessId {
+    fn from(value: u64) -> Self {
+        ProcessId(value)
     }
 }
 

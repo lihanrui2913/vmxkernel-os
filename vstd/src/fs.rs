@@ -74,8 +74,8 @@ pub enum InodeTy {
     File = 1,
 }
 
-impl InodeTy {
-    pub fn from(data: usize) -> Self {
+impl From<usize> for InodeTy {
+    fn from(data: usize) -> Self {
         match data {
             0 => return Self::Dir,
             1 => return Self::File,

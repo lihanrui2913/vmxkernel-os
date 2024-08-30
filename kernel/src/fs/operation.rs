@@ -23,8 +23,8 @@ pub enum OpenMode {
     Write,
 }
 
-impl OpenMode {
-    pub fn from(mode: usize) -> Self {
+impl From<usize> for OpenMode {
+    fn from(mode: usize) -> Self {
         match mode {
             0 => Self::Read,
             1 => Self::Write,
