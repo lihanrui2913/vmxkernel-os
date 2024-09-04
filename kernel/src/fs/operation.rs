@@ -53,7 +53,7 @@ impl FileDescriptorManager {
 
     pub fn get_new_fd(&self) -> FileDescriptor {
         self.file_descriptor_allocator
-            .fetch_add(1, Ordering::Relaxed)
+            .fetch_add(1, Ordering::SeqCst)
     }
 
     pub fn add_inode(&self, inode: InodeRef, mode: OpenMode) -> FileDescriptor {

@@ -21,7 +21,7 @@ pub struct ThreadId(pub u64);
 impl ThreadId {
     fn new() -> Self {
         static NEXT_ID: AtomicU64 = AtomicU64::new(0);
-        ThreadId(NEXT_ID.fetch_add(1, Ordering::Relaxed))
+        ThreadId(NEXT_ID.fetch_add(1, Ordering::SeqCst))
     }
 }
 

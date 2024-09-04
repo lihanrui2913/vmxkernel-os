@@ -30,7 +30,7 @@ pub struct ProcessId(pub u64);
 impl ProcessId {
     fn new() -> Self {
         static NEXT_ID: AtomicU64 = AtomicU64::new(0);
-        ProcessId(NEXT_ID.fetch_add(1, Ordering::Relaxed))
+        ProcessId(NEXT_ID.fetch_add(1, Ordering::SeqCst))
     }
 }
 

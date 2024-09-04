@@ -41,7 +41,7 @@ fn shell_read_line(fd: usize, buf: &mut String) {
 
 fn get_prompt() -> String {
     format!(
-        "\x1b[36m[\x1b[34mroot@raca \x1b[33m{}\x1b[36m]\x1b[34m:) \x1b[0m",
+        "\x1b[36m[\x1b[34mroot@vmx \x1b[33m{}\x1b[36m]\x1b[34m:) \x1b[0m",
         get_cwd()
     )
 }
