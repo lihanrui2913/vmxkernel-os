@@ -49,12 +49,14 @@ fn main() {
         cmd.arg("-device").arg("nvme,drive=boot_disk,serial=1234");
         cmd.arg("-m").arg("256m");
         cmd.arg("-smp").arg(format!("cores={}", args.cores));
-        cmd.arg("-cpu").arg("qemu64,+x2apic");
         cmd.arg("-usb");
         cmd.arg("-device").arg("qemu-xhci,id=xhci");
 
         if args.kvm {
+            cmd.arg("-cpu").arg("max,+apic,+x2apic,+vmx");
             cmd.arg("--enable-kvm");
+        } else {
+            cmd.arg("-cpu").arg("max,+x2apic");
         }
         if args.haxm {
             cmd.arg("-accel").arg("hax");

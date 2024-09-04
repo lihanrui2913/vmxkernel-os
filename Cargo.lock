@@ -506,12 +506,15 @@ dependencies = [
  "os-terminal",
  "pc-keyboard",
  "pci_types",
+ "raw-cpuid 11.1.0",
+ "rvm",
  "spin",
  "syscall_index",
  "time",
  "uart_16550",
  "uuid",
  "x2apic",
+ "x86",
  "x86_64 0.15.1",
  "xhci",
 ]
@@ -606,6 +609,12 @@ checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
  "autocfg",
 ]
+
+[[package]]
+name = "numeric-enum-macro"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "300e4bdb6b46b592948e700ea1ef24a4296491f6a0ee722b258040abd15a3714"
 
 [[package]]
 name = "nvme"
@@ -709,6 +718,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "raw-cpuid"
+version = "11.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb9ee317cfe3fbd54b36a511efc1edd42e216903c9cd575e686dd68a2ba90d8d"
+dependencies = [
+ "bitflags 2.6.0",
+]
+
+[[package]]
 name = "regex"
 version = "1.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -755,6 +773,20 @@ name = "rustversion"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "955d28af4278de8121b7ebeb796b6a45735dc01436d898801014aced2773a3d6"
+
+[[package]]
+name = "rvm"
+version = "0.1.0"
+dependencies = [
+ "bit_field",
+ "bitflags 1.3.2",
+ "cfg-if",
+ "log",
+ "numeric-enum-macro",
+ "raw-cpuid 10.7.0",
+ "x86",
+ "x86_64 0.14.12",
+]
 
 [[package]]
 name = "scopeguard"
@@ -1165,7 +1197,7 @@ dependencies = [
  "bit",
  "bitflags 1.3.2",
  "paste",
- "raw-cpuid",
+ "raw-cpuid 10.7.0",
  "x86_64 0.14.12",
 ]
 
@@ -1177,7 +1209,7 @@ checksum = "2781db97787217ad2a2845c396a5efe286f87467a5810836db6d74926e94a385"
 dependencies = [
  "bit_field",
  "bitflags 1.3.2",
- "raw-cpuid",
+ "raw-cpuid 10.7.0",
 ]
 
 [[package]]

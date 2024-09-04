@@ -115,6 +115,23 @@ impl<S: PageSize> MemoryManager<S> {
         }
     }
 
+    pub fn map_phys(virt: usize, size: usize, flags: PageTableFlags) {
+        for i in 0..(size / 4096) {
+            Self::do_map_phys(virt + i * 4096, flags);
+        }
+    }
+
+    pub fn do_map_phys(virt: usize, flags: PageTableFlags) {
+        let phys = FRAME_ALLOCATOR
+            .lock()
+            .allocate_frame()
+            .unwrap()
+            .start_address()
+            .as_u64() as usize;
+
+        Self::do_map_to(virt, phys, flags)
+    }
+
     pub fn do_map_to(virt: usize, phys: usize, flags: PageTableFlags) {
         let mut kernel_page_table = KERNEL_PAGE_TABLE.lock();
 

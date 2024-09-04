@@ -5,7 +5,7 @@ use core::panic::PanicInfo;
 use kernel::alloc::string::String;
 use kernel::device::hpet::HPET;
 use kernel::device::rtc::RtcDateTime;
-use kernel::device::terminal::terminal_manual_flush;
+// use kernel::device::terminal::terminal_manual_flush;
 use kernel::fs::operation::kernel_open;
 use kernel::fs::vfs::dev::terminal::keyboard_parse_thread;
 use kernel::task::process::Process;
@@ -23,7 +23,7 @@ extern "C" fn _start() -> ! {
     log::info!("HPET elapsed: {} ns", HPET.elapsed_ns());
 
     Thread::new_kernel_thread(keyboard_parse_thread);
-    Thread::new_kernel_thread(terminal_manual_flush);
+    // Thread::new_kernel_thread(terminal_manual_flush);
 
     let ansi_red_test_string = "\x1b[31mRed\x1b[0m";
     log::info!("ANSI red test string: {}", ansi_red_test_string);

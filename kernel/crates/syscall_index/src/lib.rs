@@ -24,6 +24,7 @@ pub enum SyscallIndex {
     ListDir,
     DirItemNum,
     IoCtl,
+    RunVM,
 }
 
 #[derive(Debug)]
