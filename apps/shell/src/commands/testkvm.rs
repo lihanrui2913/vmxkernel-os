@@ -11,5 +11,8 @@ pub fn testkvm(_args: Vec<String>) {
         0xf4,  /* hlt */
     ];
 
-    vstd::task::run_vm(code.as_ptr() as usize);
+    let addr = alloc::vec![0u8; 12].leak();
+    addr.copy_from_slice(&code);
+
+    vstd::task::run_vm(addr.as_ptr() as usize);
 }

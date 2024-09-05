@@ -55,7 +55,8 @@ extern "C" fn _start() -> ! {
 #[panic_handler]
 fn panic(panic_info: &PanicInfo<'_>) -> ! {
     log::error!("{}", panic_info);
+    kernel::syscall::exit();
     loop {
-        x86_64::instructions::hlt();
+        x86_64::instructions::interrupts::enable_and_hlt();
     }
 }

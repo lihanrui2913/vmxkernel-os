@@ -9,6 +9,7 @@ use matcher::syscall_matcher;
 
 mod matcher;
 mod operations;
+pub use operations::exit;
 
 pub fn init() {
     let handler_addr = syscall_handler as *const () as u64;
