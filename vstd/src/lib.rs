@@ -11,8 +11,7 @@ pub mod task;
 use core::panic::PanicInfo;
 use core::usize;
 
-pub use syscall_index::FbDevIoctlCommand;
-pub use syscall_index::SyscallIndex;
+pub use syscall_index::*;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {

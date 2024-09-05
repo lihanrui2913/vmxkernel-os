@@ -33,6 +33,5 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::ListDir => list_dir(arg1, arg2, arg3),
         SyscallIndex::DirItemNum => dir_item_num(arg1, arg2),
         SyscallIndex::IoCtl => ioctl(arg1, arg2, arg3),
-        SyscallIndex::RunVM => runvm(arg1),
     }
 }

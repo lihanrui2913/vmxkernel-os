@@ -24,7 +24,6 @@ pub enum SyscallIndex {
     ListDir,
     DirItemNum,
     IoCtl,
-    RunVM,
 }
 
 #[derive(Debug)]
@@ -32,6 +31,13 @@ pub enum SyscallIndex {
 pub enum FbDevIoctlCommand {
     GetWidth,
     GetHeight,
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub enum KvmDevIoctlCommand {
+    KvmRun,
+    KvmGetRegs,
 }
 
 impl From<usize> for SyscallIndex {
@@ -45,6 +51,16 @@ impl From<usize> for SyscallIndex {
 }
 
 impl From<usize> for FbDevIoctlCommand {
+    fn from(number: usize) -> Self {
+        let length = variant_count::<Self>();
+        if number >= length {
+            panic!("Invalid syscall index: {}", number);
+        }
+        unsafe { transmute(number as u8) }
+    }
+}
+
+impl From<usize> for KvmDevIoctlCommand {
     fn from(number: usize) -> Self {
         let length = variant_count::<Self>();
         if number >= length {

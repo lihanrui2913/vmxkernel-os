@@ -1,5 +1,6 @@
 use alloc::{format, string::ToString, sync::Arc};
 use fb::FrameBuffer;
+use kvm::KVMInode;
 use spin::{Mutex, RwLock};
 use terminal::Terminal;
 
@@ -13,6 +14,7 @@ use super::{
 pub mod block;
 pub mod fb;
 pub mod gpt_parser;
+pub mod kvm;
 pub mod partition;
 pub mod terminal;
 
@@ -52,6 +54,9 @@ pub fn init() {
 
     let fb = Arc::new(RwLock::new(FrameBuffer::new()));
     mount_to(fb.clone(), dev_fs.clone(), "fb".to_string());
+
+    let kvm = Arc::new(RwLock::new(KVMInode::new()));
+    mount_to(kvm.clone(), dev_fs.clone(), "kvm".to_string());
 
     provide_hard_disks(dev_fs.clone());
 }

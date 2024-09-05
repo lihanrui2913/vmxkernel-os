@@ -1,4 +1,5 @@
 use alloc::{string::String, vec::Vec};
+use vstd::fs::{ioctl, open};
 
 pub fn testkvm(_args: Vec<String>) {
     let code: [u8; 12] = [
@@ -14,5 +15,10 @@ pub fn testkvm(_args: Vec<String>) {
     let addr = alloc::vec![0u8; 12].leak();
     addr.copy_from_slice(&code);
 
-    vstd::task::run_vm(addr.as_ptr() as usize);
+    let kvm_fd = open(String::from("/dev/kvm"), vstd::fs::OpenMode::Read);
+    ioctl(
+        kvm_fd,
+        vstd::KvmDevIoctlCommand::KvmRun as usize,
+        addr.as_ptr() as usize,
+    );
 }

@@ -28,7 +28,3 @@ pub fn wait(pid: usize) -> usize {
 
     0
 }
-
-pub fn run_vm(address: usize) -> usize {
-    crate::syscall(SyscallIndex::RunVM as u64, address, 0, 0, 0, 0)
-}
