@@ -1,16 +1,14 @@
+use gpm::{GuestMemoryRegion, GuestPhysMemorySet};
 use lapic::VirtLocalApic;
 use rvm::arch::{VmxExitInfo, VmxExitReason};
-use rvm::{RvmError, RvmHal, RvmPerCpu, RvmResult, RvmVcpu};
+use rvm::{GuestPhysAddr, HostPhysAddr, MemFlags, RvmError, RvmHal, RvmPerCpu, RvmResult, RvmVcpu};
 use x86_64::registers::control::{Cr0, Cr0Flags, Cr4, Cr4Flags, Efer, EferFlags};
 use x86_64::{
     structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame},
     PhysAddr, VirtAddr,
 };
 
-use crate::memory::{
-    convert_physical_to_virtual, convert_virtual_to_physical, MappingType, MemoryManager,
-    FRAME_ALLOCATOR,
-};
+use crate::memory::{convert_physical_to_virtual, convert_virtual_to_physical, FRAME_ALLOCATOR};
 
 const CR0: u64 = Cr0Flags::PROTECTED_MODE_ENABLE.bits()
     | Cr0Flags::MONITOR_COPROCESSOR.bits()
@@ -270,7 +268,11 @@ fn handle_ept_violation(vcpu: &Vcpu, guest_rip: usize) -> RvmResult {
 }
 
 pub mod device_emu;
+pub mod gconfig;
+pub mod gpm;
 pub mod lapic;
+
+use gconfig::*;
 
 pub fn init() {
     unsafe {
@@ -280,21 +282,83 @@ pub fn init() {
     }
 }
 
+#[repr(align(4096))]
+struct AlignedMemory<const LEN: usize>([u8; LEN]);
+
+static mut GUEST_PHYS_MEMORY: AlignedMemory<GUEST_PHYS_MEMORY_SIZE> =
+    AlignedMemory([0; GUEST_PHYS_MEMORY_SIZE]);
+
+fn gpa_as_mut_ptr(guest_paddr: GuestPhysAddr) -> *mut u8 {
+    use core::ptr::addr_of;
+    let offset = addr_of!(GUEST_PHYS_MEMORY) as usize;
+    let host_vaddr = guest_paddr + offset;
+    host_vaddr as *mut u8
+}
+
+fn load_guest_image(image_ptr: HostPhysAddr, load_gpa: GuestPhysAddr, size: usize) {
+    // let image_ptr = convert_physical_to_virtual(PhysAddr::new(image_ptr as u64)).as_ptr();
+    let image = unsafe { core::slice::from_raw_parts(image_ptr as _, size) };
+    unsafe {
+        core::slice::from_raw_parts_mut(gpa_as_mut_ptr(load_gpa), size).copy_from_slice(image)
+    }
+}
+
+fn setup_gpm(entry_paddr: usize) -> RvmResult<GuestPhysMemorySet> {
+    // copy BIOS and guest images
+    load_guest_image(entry_paddr, GUEST_ENTRY, GUEST_IMAGE_SIZE);
+
+    // create nested page table and add mapping
+    let mut gpm = GuestPhysMemorySet::new()?;
+    let guest_memory_regions = [
+        GuestMemoryRegion {
+            // RAM
+            gpa: GUEST_PHYS_MEMORY_BASE,
+            hpa: convert_virtual_to_physical(VirtAddr::new(
+                gpa_as_mut_ptr(GUEST_PHYS_MEMORY_BASE) as u64
+            ))
+            .as_u64() as usize,
+            size: GUEST_PHYS_MEMORY_SIZE,
+            flags: MemFlags::READ | MemFlags::WRITE | MemFlags::EXECUTE,
+        },
+        GuestMemoryRegion {
+            // IO APIC
+            gpa: 0xfec0_0000,
+            hpa: 0xfec0_0000,
+            size: 0x1000,
+            flags: MemFlags::READ | MemFlags::WRITE | MemFlags::DEVICE,
+        },
+        GuestMemoryRegion {
+            // HPET
+            gpa: 0xfed0_0000,
+            hpa: 0xfed0_0000,
+            size: 0x1000,
+            flags: MemFlags::READ | MemFlags::WRITE | MemFlags::DEVICE,
+        },
+        GuestMemoryRegion {
+            // Local APIC
+            gpa: 0xfee0_0000,
+            hpa: 0xfee0_0000,
+            size: 0x1000,
+            flags: MemFlags::READ | MemFlags::WRITE | MemFlags::DEVICE,
+        },
+    ];
+    for r in guest_memory_regions.into_iter() {
+        gpm.map_region(r.into())?;
+    }
+    Ok(gpm)
+}
+
 pub fn run_vm(entry_address: usize) -> ! {
     let mut percpu = RvmPerCpu::<RvmHalImpl>::new(0);
     percpu.hardware_enable().unwrap();
 
-    let new_page_table_address = FRAME_ALLOCATOR
-        .lock()
-        .allocate_frame()
-        .unwrap()
-        .start_address()
-        .as_u64() as usize;
+    log::info!("entry = {:#x}", entry_address);
 
-    <MemoryManager>::map_phys(entry_address, 0x1000, MappingType::KernelData.flags());
+    let gpm = setup_gpm(entry_address).unwrap();
+    log::info!("{:#x?}", gpm);
 
     let mut vcpu = percpu
-        .create_vcpu(entry_address, new_page_table_address)
+        .create_vcpu(GUEST_ENTRY, gpm.nest_page_table_root())
         .unwrap();
 
     log::info!("Running guest");
