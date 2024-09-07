@@ -46,6 +46,7 @@ fn main() {
         cmd.arg("-machine").arg("q35");
         cmd.arg("-drive").arg(ovmf_config);
         cmd.arg("-drive").arg(drive_config);
+        cmd.arg("-device").arg("ahci,id=ahci");
         cmd.arg("-device").arg("nvme,drive=boot_disk,serial=1234");
         cmd.arg("-m").arg("256m");
         cmd.arg("-smp").arg(format!("cores={}", args.cores));
