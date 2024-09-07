@@ -1,5 +1,8 @@
 use alloc::{collections::btree_map::BTreeMap, vec::Vec};
-use nvme::{memory::Dma, nvme::NvmeDevice};
+use nvme::{
+    memory::{Allocator, Dma},
+    nvme::NvmeDevice,
+};
 use spin::Mutex;
 use x86_64::{structures::paging::PageTableFlags, PhysAddr};
 
@@ -7,13 +10,16 @@ use crate::memory::{convert_physical_to_virtual, MemoryManager};
 
 use super::pci::get_device_by_class_code;
 
-#[no_mangle]
-pub fn alloc_for_dma(size: usize) -> (usize, usize) {
-    let (paddr, vaddr) = <MemoryManager>::alloc_for_dma(size);
-    (paddr.as_u64() as usize, vaddr.as_u64() as usize)
+pub struct AllocatorImpl;
+
+impl Allocator for AllocatorImpl {
+    unsafe fn allocate(&self, size: usize) -> (usize, usize) {
+        let (paddr, vaddr) = <MemoryManager>::alloc_for_dma(size / 4096);
+        (paddr.as_u64() as usize, vaddr.as_u64() as usize)
+    }
 }
 
-static NVME_CONS: Mutex<Vec<NvmeDevice>> = Mutex::new(Vec::new());
+static NVME_CONS: Mutex<Vec<NvmeDevice<AllocatorImpl>>> = Mutex::new(Vec::new());
 static NVME_SIZES: Mutex<BTreeMap<usize, usize>> = Mutex::new(BTreeMap::new());
 
 pub fn init() {
@@ -37,8 +43,9 @@ pub fn init() {
                 );
 
                 log::info!("NVMe OK");
-                let mut nvme_device = NvmeDevice::init(vaddr.as_u64() as usize, len as usize)
-                    .expect("Cannot init NVMe device");
+                let mut nvme_device =
+                    NvmeDevice::init(vaddr.as_u64() as usize, len as usize, AllocatorImpl)
+                        .expect("Cannot init NVMe device");
 
                 nvme_device
                     .identify_controller()
@@ -63,7 +70,7 @@ pub fn init() {
 
 /// Reads a block from the NVMe driver at block block_id
 pub fn read_block(hd: usize, block_id: u64, buf: &mut [u8]) {
-    let dma: Dma<u8> = Dma::allocate(buf.len()).expect("Cannot allocate frame");
+    let dma: Dma<u8> = Dma::<u8>::allocate(&AllocatorImpl, buf.len());
     let mut cons = NVME_CONS.lock();
     let nvme = cons.get_mut(hd).expect("Cannot get hd");
     nvme.read(&dma, block_id).expect("Cannot read");
@@ -72,7 +79,7 @@ pub fn read_block(hd: usize, block_id: u64, buf: &mut [u8]) {
 
 /// Writes a block to the NVMe driver at block block_id
 pub fn write_block(hd: usize, block_id: u64, buf: &[u8]) {
-    let dma: Dma<u8> = Dma::allocate(buf.len()).expect("Cannot allocate frame");
+    let dma: Dma<u8> = Dma::<u8>::allocate(&AllocatorImpl, buf.len());
     unsafe { dma.virt.copy_from(buf.as_ptr(), 512) };
     let mut cons = NVME_CONS.lock();
     let nvme = cons.get_mut(hd).expect("Cannot get hd");

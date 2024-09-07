@@ -618,9 +618,9 @@ checksum = "300e4bdb6b46b592948e700ea1ef24a4296491f6a0ee722b258040abd15a3714"
 
 [[package]]
 name = "nvme"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8779774ed019503a6bcbda92004aa826dfb420f3dabe0591e9035fec86869675"
+checksum = "769d5e9fca712130840c2ddcc690e7b9e618a6ac853ab12469d4522baf6b81f0"
 dependencies = [
  "log",
 ]
