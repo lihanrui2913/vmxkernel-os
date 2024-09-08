@@ -1,6 +1,7 @@
 use crate::fs::operation::{get_inode_by_fd, OpenMode};
 use crate::fs::vfs::inode::{FileInfo, InodeTy};
 use crate::memory::{addr_to_mut_ref, write_for_syscall};
+use crate::task::get_current_process;
 use crate::task::process::is_process_exited;
 use crate::task::scheduler::SCHEDULER;
 use alloc::alloc::{alloc, dealloc};
@@ -94,12 +95,13 @@ pub fn fsize(fd: usize) -> usize {
     crate::fs::operation::fsize(fd).unwrap()
 }
 
-pub fn execve(buf_addr: usize, buf_len: usize) -> usize {
+pub fn execve(buf_addr: usize, buf_len: usize, args_ptr: usize, args_len: usize) -> usize {
     let buffer = unsafe { slice::from_raw_parts(buf_addr as _, buf_len) };
-    crate::task::process::Process::new_user_process("task", buffer)
-        .read()
-        .id
-        .0 as usize
+    let new_process = crate::task::process::Process::new_user_process("task", buffer);
+    new_process.write().args_value = args_ptr;
+    new_process.write().args_len = args_len;
+    let ret = new_process.read().id.0 as usize;
+    ret
 }
 
 pub fn is_exited(pid: usize) -> usize {
@@ -177,4 +179,17 @@ pub fn dir_item_num(path_addr: usize, path_len: usize) -> usize {
 
 pub fn ioctl(fd: usize, cmd: usize, arg: usize) -> usize {
     crate::fs::operation::ioctl(fd, cmd, arg)
+}
+
+pub fn get_args() -> usize {
+    let current_process = get_current_process();
+    let current_args_value = current_process.read().args_value;
+    let current_args_len = current_process.read().args_len;
+
+    let ret_struct_ptr = alloc::vec![0u8; 16].leak().as_ptr() as u64;
+    let value_ptr = addr_to_mut_ref(VirtAddr::new(ret_struct_ptr));
+    *value_ptr = current_args_value;
+    let len_ptr = addr_to_mut_ref(VirtAddr::new(ret_struct_ptr + 8));
+    *len_ptr = current_args_len;
+    ret_struct_ptr as usize
 }

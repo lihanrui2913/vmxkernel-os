@@ -11,6 +11,8 @@ pub mod task;
 use core::panic::PanicInfo;
 use core::usize;
 
+use alloc::string::String;
+use alloc::vec::Vec;
 pub use syscall_index::*;
 
 #[panic_handler]
@@ -43,11 +45,12 @@ extern "C" fn syscall(
     }
 }
 
-extern "C" {
-    fn main() -> usize;
+extern "Rust" {
+    fn main(args: Vec<String>) -> usize;
 }
 
 #[no_mangle]
 pub unsafe extern "sysv64" fn _start() -> ! {
-    task::exit(main());
+    let args = task::get_args();
+    task::exit(main(args));
 }

@@ -53,7 +53,9 @@ fn exit(_args: Vec<String>) {
 }
 
 #[no_mangle]
-pub fn main() -> usize {
+pub fn main(args: Vec<String>) -> usize {
+    println!("shell is running!!! args = {:?}", args);
+
     let mut command_function_list = BTreeMap::<&str, CommandFunction>::new();
 
     {
@@ -85,7 +87,7 @@ pub fn main() -> usize {
 
         if let Some(function) = function {
             function(args);
-        } else if let None = run::try_run(args[0].clone()) {
+        } else if let None = run::try_run(args[0].clone(), input.as_str()) {
             println!("Command not found: {}", args[0]);
         }
     }

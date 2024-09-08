@@ -46,6 +46,8 @@ pub struct Process {
     pub name: String,
     pub page_table: OffsetPageTable<'static>,
     pub threads: Vec<SharedThread>,
+    pub args_value: usize,
+    pub args_len: usize,
 }
 
 impl Process {
@@ -55,6 +57,8 @@ impl Process {
             name: String::from(name),
             page_table: unsafe { KERNEL_PAGE_TABLE.lock().deep_copy() },
             threads: Default::default(),
+            args_value: 0,
+            args_len: 0,
         };
 
         process

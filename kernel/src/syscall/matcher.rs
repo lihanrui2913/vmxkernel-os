@@ -25,7 +25,7 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::Read => read(arg1, arg2, arg3),
         SyscallIndex::Write => write(arg1, arg2, arg3),
         SyscallIndex::Fsize => fsize(arg1),
-        SyscallIndex::Execve => execve(arg1, arg2),
+        SyscallIndex::Execve => execve(arg1, arg2, arg3, arg4),
         SyscallIndex::IsExited => is_exited(arg1),
         SyscallIndex::ChangeCwd => change_cwd(arg1, arg2),
         SyscallIndex::GetCwd => get_cwd(),
@@ -33,5 +33,6 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::ListDir => list_dir(arg1, arg2, arg3),
         SyscallIndex::DirItemNum => dir_item_num(arg1, arg2),
         SyscallIndex::IoCtl => ioctl(arg1, arg2, arg3),
+        SyscallIndex::GetArgs => get_args(),
     }
 }
