@@ -26,6 +26,7 @@ pub fn init() {
     arch::interrupts::IDT.load();
     arch::smp::CPUS.write().init_ap();
     arch::apic::init();
+    arch::interrupts::init();
     device::mouse::init();
     device::pci::init();
     device::nvme::init();
