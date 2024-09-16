@@ -8,14 +8,15 @@ use core::{fmt, ptr};
 use device_type::DeviceType;
 use pci_types::*;
 use spin::Lazy;
+use x86_64::registers::control::{Cr0, Cr0Flags, Cr4, Cr4Flags};
 use x86_64::{PhysAddr, VirtAddr};
 
 use crate::{arch::acpi::ACPI, memory::convert_physical_to_virtual};
 
-pub static PCI_DEVICES: Lazy<BTreeMap<PciAddress, PciDevice>> = Lazy::new(|| {
-    let pci_access = PciAccess::new(&ACPI.pci_regions);
-    PciResolver::resolve(pci_access)
-});
+pub static PCI_ACCESS: Lazy<PciAccess> = Lazy::new(|| PciAccess::new(&ACPI.pci_regions));
+
+pub static PCI_DEVICES: Lazy<BTreeMap<PciAddress, PciDevice>> =
+    Lazy::new(|| PciResolver::resolve(PCI_ACCESS.clone()));
 
 pub fn get_device_by_class_code(class: BaseClass, sub_class: SubClass) -> Vec<&'static PciDevice> {
     let devices = PCI_DEVICES.iter();
@@ -33,9 +34,21 @@ pub fn init() {
         .iter()
         .for_each(|(_, device)| log::info!("{}", device));
 
+    // now enable SSE and the like
+    let mut cr0 = Cr0::read();
+    cr0.set(Cr0Flags::EMULATE_COPROCESSOR, false);
+    cr0.set(Cr0Flags::MONITOR_COPROCESSOR, true);
+    unsafe { Cr0::write(cr0) };
+
+    let mut cr4 = Cr4::read();
+    cr4.set(Cr4Flags::OSFXSR, true);
+    cr4.set(Cr4Flags::OSXMMEXCPT_ENABLE, true);
+    unsafe { Cr4::write(cr4) };
+
     log::info!("PCI initialized successfully!");
 }
 
+#[derive(Clone, Copy)]
 pub struct PciAccess<'a>(&'a PciConfigRegions<'a, Global>);
 
 impl<'a> PciAccess<'a> {
@@ -182,12 +195,11 @@ impl<'a> PciResolver<'a> {
                 endpoint_header.capabilities(&self.access).for_each(
                     |capability| match capability {
                         PciCapability::Msi(msi) => {
-                            log::info!("[TODO]: MSI {:?}", msi);
+                            msi.set_enabled(true, PCI_ACCESS.clone());
                         }
-                        PciCapability::MsiX(msix) => {
-                            let table_bar = bars[msix.table_bar() as usize].unwrap();
-                            log::info!("[TODO]: MSI-X {:?}", msix);
-                            log::info!("[TODO]: MSI-X Table {:?}", table_bar);
+                        PciCapability::MsiX(mut msix) => {
+                            msix.set_enabled(true, PCI_ACCESS.clone());
+                            // let table_bar = bars[msix.table_bar() as usize].unwrap();
                         }
                         _ => {}
                     },

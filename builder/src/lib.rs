@@ -78,7 +78,7 @@ impl FatBuilder {
             const ADDITIONAL_SPACE: u64 = 1024 * 64;
             files_size + ADDITIONAL_SPACE
         };
-        fat_file.set_len(fat_size).unwrap();
+        fat_file.set_len(fat_size + 1024 * 1024).unwrap();
 
         let format_options = fatfs::FormatVolumeOptions::new();
         fatfs::format_volume(&fat_file, format_options).context("Failed to format FAT file")?;

@@ -22,6 +22,7 @@ pub enum InterruptIndex {
     ApicSpurious,
     Keyboard,
     Mouse,
+    Xhci,
 }
 
 macro_rules! interrupt_handler {

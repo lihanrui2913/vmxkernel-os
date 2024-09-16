@@ -51,7 +51,7 @@ fn main() {
         cmd.arg("-m").arg("256m");
         cmd.arg("-smp").arg(format!("cores={}", args.cores));
         cmd.arg("-usb");
-        cmd.arg("-device").arg("qemu-xhci,id=xhci");
+        cmd.arg("-device").arg("nec-usb-xhci,id=xhci");
 
         if args.kvm {
             cmd.arg("-cpu").arg("max,+apic,+x2apic,+vmx");

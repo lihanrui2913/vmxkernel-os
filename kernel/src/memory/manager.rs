@@ -151,7 +151,7 @@ impl<S: PageSize> MemoryManager<S> {
                     if kernel_page_table
                         .translate_addr(VirtAddr::new(virt as u64))
                         .unwrap()
-                        != frame.start_address()
+                        != PhysAddr::new(phys as u64)
                     {
                         log::warn!("Page already mapped: frame: {:?}", frame);
                         kernel_page_table
