@@ -67,13 +67,23 @@ impl Inode for Terminal {
     }
 
     fn read_at(&self, _offset: usize, buf: &mut [u8]) -> usize {
-        if let Some(byte) = BYTES.pop() {
-            buf[0] = byte as u8;
-        } else {
-            buf[0] = 0;
+        let mut write: usize = 0;
+
+        while write < buf.len() {
+            if let Some(char) = BYTES.pop() {
+                buf[write] = char as u8;
+                write += 1;
+                if char == '\n' {
+                    break;
+                }
+            } else {
+                while BYTES.is_empty() {
+                    x86_64::instructions::interrupts::enable_and_hlt();
+                }
+            }
         }
 
-        1
+        write
     }
 
     fn write_at(&self, _offset: usize, buf: &[u8]) -> usize {
