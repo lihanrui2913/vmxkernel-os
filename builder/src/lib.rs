@@ -31,6 +31,9 @@ impl ImageBuilder {
         let shell_path = Path::new(env!("CARGO_BIN_FILE_SHELL_shell")).to_path_buf();
         let ui_path = Path::new(env!("CARGO_BIN_FILE_UI_ui")).to_path_buf();
 
+        let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let test_path = manifest_dir.parent().unwrap().join("apps").join("test.elf");
+
         let mut files = BTreeMap::new();
         files.insert(KERNEL.into(), kernel_path);
         files.insert(LIMINE_EFI, limine_elf);
@@ -38,6 +41,7 @@ impl ImageBuilder {
         files.insert("init.elf", init_path);
         files.insert("shell.elf", shell_path);
         files.insert("ui.elf", ui_path);
+        files.insert("test.elf", test_path);
 
         let fat_partition = NamedTempFile::new().context("failed to create temp file")?;
         FatBuilder::create(files, fat_partition.path())

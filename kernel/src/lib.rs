@@ -3,7 +3,9 @@
 #![feature(alloc_error_handler)]
 #![feature(allocator_api)]
 #![feature(naked_functions)]
+#![feature(strict_provenance)]
 #![feature(unsigned_is_multiple_of)]
+#![feature(vec_into_raw_parts)]
 
 use core::sync::atomic::AtomicBool;
 

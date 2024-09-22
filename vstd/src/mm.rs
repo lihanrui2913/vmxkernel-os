@@ -30,6 +30,10 @@ fn free(addr: u64, layout: Layout) {
     );
 }
 
+pub fn sbrk(size: usize) -> usize {
+    crate::syscall(SyscallIndex::SBrk as u64, size, 0, 0, 0, 0)
+}
+
 struct MemoryAllocator;
 
 unsafe impl GlobalAlloc for MemoryAllocator {

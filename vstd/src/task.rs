@@ -1,4 +1,4 @@
-use core::str;
+use core::{hint::spin_loop, str};
 
 use alloc::{string::String, vec::Vec};
 
@@ -7,7 +7,9 @@ use crate::SyscallIndex;
 pub fn exit(code: usize) -> ! {
     crate::syscall(SyscallIndex::Exit as u64, code, 0, 0, 0, 0);
 
-    loop {}
+    loop {
+        spin_loop();
+    }
 }
 
 pub fn execve(buf: &[u8], args_ptr: usize, args_len: usize) -> usize {
@@ -38,6 +40,9 @@ pub fn get_args() -> Vec<String> {
 
     let ptr = crate::syscall(SyscallIndex::GetArgs as u64, 0, 0, 0, 0, 0);
     let args_buf_ptr = unsafe { (ptr as *const u64).read() };
+    if args_buf_ptr == 0 {
+        return vec;
+    }
     let args_buf_len = unsafe { (ptr as *const usize).add(1).read() };
     let args_buf = unsafe { core::slice::from_raw_parts(args_buf_ptr as *const u8, args_buf_len) };
 
@@ -48,4 +53,12 @@ pub fn get_args() -> Vec<String> {
     }
 
     vec
+}
+
+pub fn getpid() -> usize {
+    crate::syscall(SyscallIndex::GetPid as u64, 0, 0, 0, 0, 0)
+}
+
+pub fn kill(pid: usize) -> usize {
+    crate::syscall(SyscallIndex::Kill as u64, pid, 0, 0, 0, 0)
 }

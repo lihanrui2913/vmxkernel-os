@@ -1,3 +1,7 @@
+/Cargo.lock
 /target
-vmxOS.*
+/vmxOS.*
 /Makefile
+*.elf
+*.o
+*.txt

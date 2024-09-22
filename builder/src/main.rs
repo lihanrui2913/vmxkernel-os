@@ -47,7 +47,8 @@ fn main() {
         cmd.arg("-drive").arg(ovmf_config);
         cmd.arg("-drive").arg(drive_config);
         cmd.arg("-device").arg("ahci,id=ahci");
-        cmd.arg("-device").arg("nvme,drive=boot_disk,serial=1234");
+        cmd.arg("-device").arg("ide-hd,drive=boot_disk,bus=ahci.0");
+        // cmd.arg("-device").arg("nvme,drive=boot_disk,serial=1234");
         cmd.arg("-m").arg("256m");
         cmd.arg("-smp").arg(format!("cores={}", args.cores));
         cmd.arg("-usb");

@@ -12,9 +12,10 @@ use x86_64::structures::paging::OffsetPageTable;
 use x86_64::VirtAddr;
 
 use super::thread::{SharedThread, Thread};
-use crate::fs::operation::init_file_descriptor_manager;
+use crate::fs::operation::init_file_descriptor_manager_with_stdin_stdout;
+use crate::fs::vfs::dev::terminal::Terminal;
+use crate::memory::KERNEL_PAGE_TABLE;
 use crate::memory::{ExtendedPageTable, MappingType, MemoryManager};
-use crate::memory::{FRAME_ALLOCATOR, KERNEL_PAGE_TABLE};
 
 pub(super) type SharedProcess = Arc<RwLock<Box<Process>>>;
 pub(super) type WeakSharedProcess = Weak<RwLock<Box<Process>>>;
@@ -79,7 +80,11 @@ impl Process {
             PROCESSES.write().push_back(process.clone());
             process
         });
-        init_file_descriptor_manager(process.read().id);
+        init_file_descriptor_manager_with_stdin_stdout(
+            process.read().id,
+            Arc::new(RwLock::new(Terminal::new())),
+            Arc::new(RwLock::new(Terminal::new())),
+        );
 
         return process;
     }
@@ -122,11 +127,6 @@ impl ProcessBinary {
 impl Drop for Process {
     fn drop(&mut self) {
         unsafe { self.page_table.free_user_page_table() };
-        log::info!("Process {} dropped", self.id.0);
-        log::info!(
-            "Available frames: {:?}",
-            FRAME_ALLOCATOR.lock().available_frames()
-        );
     }
 }
 

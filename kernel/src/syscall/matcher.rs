@@ -34,5 +34,9 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::DirItemNum => dir_item_num(arg1, arg2),
         SyscallIndex::IoCtl => ioctl(arg1, arg2, arg3),
         SyscallIndex::GetArgs => get_args(),
+        SyscallIndex::GetPid => get_pid(),
+        SyscallIndex::LSeek => lseek(arg1, arg2),
+        SyscallIndex::Kill => kill_process(arg1),
+        SyscallIndex::SBrk => sbrk(arg1),
     }
 }

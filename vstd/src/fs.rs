@@ -146,3 +146,7 @@ pub fn list_dir(path: String) -> Vec<FileInfo> {
 pub fn ioctl(fd: usize, cmd: usize, arg: usize) -> usize {
     crate::syscall(SyscallIndex::IoCtl as u64, fd, cmd, arg, 0, 0)
 }
+
+pub fn lseek(fd: usize, ptr: usize) -> usize {
+    crate::syscall(SyscallIndex::LSeek as u64, fd, ptr, 0, 0, 0)
+}

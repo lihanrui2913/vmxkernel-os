@@ -5,6 +5,7 @@ use spin::{Lazy, Mutex};
 use x86_64::VirtAddr;
 
 use super::context::Context;
+use super::process::ProcessId;
 use super::thread::{Thread, WeakSharedThread};
 use crate::arch::apic::LAPIC;
 use crate::arch::smp::CPUS;
@@ -34,6 +35,24 @@ impl Scheduler {
             current_threads,
             ready_threads: VecDeque::new(),
         }
+    }
+
+    pub fn find(&self, pid: ProcessId) -> Option<WeakSharedThread> {
+        self.ready_threads
+            .iter()
+            .find(|thread| {
+                thread
+                    .upgrade()
+                    .unwrap()
+                    .read()
+                    .process
+                    .upgrade()
+                    .unwrap()
+                    .read()
+                    .id
+                    == pid
+            })
+            .cloned()
     }
 
     #[inline]

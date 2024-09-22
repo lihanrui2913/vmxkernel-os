@@ -98,6 +98,7 @@ pub fn init_file_descriptor_manager_with_stdin_stdout(
     let mut file_descriptors = BTreeMap::new();
     file_descriptors.insert(0, (stdin.clone(), OpenMode::Read, 0));
     file_descriptors.insert(1, (stdout.clone(), OpenMode::Write, 0));
+    file_descriptors.insert(2, (stdout.clone(), OpenMode::Write, 0));
 
     file_descriptor_managers.insert(pid, Arc::new(FileDescriptorManager::new(file_descriptors)));
 }

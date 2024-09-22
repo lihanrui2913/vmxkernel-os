@@ -25,6 +25,10 @@ pub enum SyscallIndex {
     DirItemNum,
     IoCtl,
     GetArgs,
+    GetPid,
+    LSeek,
+    Kill,
+    SBrk,
 }
 
 #[derive(Debug)]

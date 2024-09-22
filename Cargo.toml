@@ -1,5 +1,6 @@
 [workspace]
 members = ["apps/init", "apps/shell", "apps/ui", "builder", "kernel", "vstd", "kernel/crates/syscall_index", "kernel/crates/good-fatfs", "kernel/crates/rvm"]
+exclude = ["vsc"]
 resolver = "2"
 default-members = ["builder"]
 

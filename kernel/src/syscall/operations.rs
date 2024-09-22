@@ -1,14 +1,16 @@
 use crate::fs::operation::{get_inode_by_fd, OpenMode};
 use crate::fs::vfs::inode::{FileInfo, InodeTy};
 use crate::memory::{addr_to_mut_ref, write_for_syscall};
-use crate::task::get_current_process;
-use crate::task::process::is_process_exited;
+use crate::task::process::{is_process_exited, ProcessId};
 use crate::task::scheduler::SCHEDULER;
+use crate::task::{get_current_process, get_current_process_id};
 use alloc::alloc::{alloc, dealloc};
+use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::alloc::Layout;
 use core::{slice, str, usize};
+use spin::{Lazy, Mutex};
 use x86_64::VirtAddr;
 
 pub fn print(buffer: *const u8, length: usize) -> usize {
@@ -192,4 +194,70 @@ pub fn get_args() -> usize {
     let len_ptr = addr_to_mut_ref(VirtAddr::new(ret_struct_ptr + 8));
     *len_ptr = current_args_len;
     ret_struct_ptr as usize
+}
+
+pub fn get_pid() -> usize {
+    get_current_process_id().0 as usize
+}
+
+pub fn lseek(fd: usize, offset: usize) -> usize {
+    let res = crate::fs::operation::lseek(fd, offset);
+    if res.is_some() {
+        return 0;
+    }
+    return usize::MAX;
+}
+
+pub fn kill_process(pid: usize) -> usize {
+    {
+        let mut scheduler = SCHEDULER.lock();
+        let thread = scheduler.find(ProcessId::from(pid as u64));
+
+        if let Some(thread) = thread {
+            scheduler.remove(thread.clone());
+            if let Some(thread) = thread.upgrade() {
+                let thread = thread.read();
+                if let Some(process) = thread.process.upgrade() {
+                    process.read().exit_process();
+                }
+            }
+        }
+    }
+
+    0
+}
+
+static C_ALLOCATION_MAP: Lazy<Mutex<BTreeMap<VirtAddr, (VirtAddr, usize, usize)>>> =
+    Lazy::new(|| Mutex::new(BTreeMap::new()));
+
+pub fn sbrk(size: usize) -> usize {
+    let size = size as isize;
+    if size > 0 {
+        let size = size as usize;
+
+        let space: Vec<u8> = alloc::vec![0u8; size];
+
+        assert!(space.len() == size);
+        let (ptr, len, cap) = space.into_raw_parts();
+        if !ptr.is_null() {
+            let vaddr = VirtAddr::new(ptr as u64);
+            let mut guard = C_ALLOCATION_MAP.lock();
+            if guard.contains_key(&vaddr) {
+                drop(guard);
+                unsafe {
+                    drop(Vec::from_raw_parts(vaddr.as_mut_ptr() as *mut u8, len, cap));
+                }
+                panic!(
+                    "sbrk(): vaddr {:?} already exists in C Allocation Map, query size: {size}",
+                    vaddr
+                );
+            }
+            guard.insert(vaddr, (vaddr, len, cap));
+            return vaddr.as_u64() as usize;
+        } else {
+            return usize::MAX;
+        }
+    } else {
+        return usize::MAX;
+    }
 }
