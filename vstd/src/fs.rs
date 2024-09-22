@@ -1,3 +1,5 @@
+use core::mem::{transmute, variant_count};
+
 use alloc::{string::String, vec::Vec};
 
 use crate::SyscallIndex;
@@ -6,6 +8,28 @@ use crate::SyscallIndex;
 pub enum OpenMode {
     Read = 0,
     Write = 1,
+    ReadWrite = 2,
+}
+
+impl From<usize> for OpenMode {
+    fn from(number: usize) -> Self {
+        let length = variant_count::<Self>();
+        if number >= length {
+            panic!("Invalid openmode index: {}", number);
+        }
+        unsafe { transmute(number as u32) }
+    }
+}
+
+pub fn create(path: String, mode: OpenMode) -> usize {
+    crate::syscall(
+        SyscallIndex::Create as u64,
+        path.as_ptr() as usize,
+        path.len(),
+        mode as usize,
+        0,
+        0,
+    )
 }
 
 pub fn open(path: String, mode: OpenMode) -> usize {

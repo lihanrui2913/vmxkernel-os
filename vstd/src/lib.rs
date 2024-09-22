@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(naked_functions)]
+#![feature(variant_count)]
 
 pub extern crate alloc;
 

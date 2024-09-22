@@ -261,3 +261,15 @@ pub fn sbrk(size: usize) -> usize {
         return usize::MAX;
     }
 }
+
+pub fn create(path: usize, path_len: usize, _mode: usize) -> usize {
+    let slice = unsafe { core::slice::from_raw_parts(path as _, path_len) };
+    let path = String::from(str::from_utf8(slice).expect("Cannot from utf8"));
+
+    let fd = crate::fs::operation::create(path, InodeTy::File);
+
+    if fd.is_some() {
+        return fd.unwrap();
+    }
+    usize::MAX
+}

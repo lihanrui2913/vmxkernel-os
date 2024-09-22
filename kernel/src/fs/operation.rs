@@ -19,8 +19,9 @@ static FILE_DESCRIPTOR_MANAGERS: Mutex<BTreeMap<ProcessId, Arc<FileDescriptorMan
     Mutex::new(BTreeMap::new());
 
 pub enum OpenMode {
-    Read,
-    Write,
+    Read = 0,
+    Write = 1,
+    ReadWrite = 2,
 }
 
 impl From<usize> for OpenMode {
@@ -28,6 +29,7 @@ impl From<usize> for OpenMode {
         match mode {
             0 => Self::Read,
             1 => Self::Write,
+            2 => Self::ReadWrite,
             _ => panic!("Unknown open mode!!!"),
         }
     }
@@ -97,8 +99,8 @@ pub fn init_file_descriptor_manager_with_stdin_stdout(
 
     let mut file_descriptors = BTreeMap::new();
     file_descriptors.insert(0, (stdin.clone(), OpenMode::Read, 0));
-    file_descriptors.insert(1, (stdout.clone(), OpenMode::Write, 0));
-    file_descriptors.insert(2, (stdout.clone(), OpenMode::Write, 0));
+    file_descriptors.insert(1, (stdout.clone(), OpenMode::ReadWrite, 0));
+    file_descriptors.insert(2, (stdout.clone(), OpenMode::ReadWrite, 0));
 
     file_descriptor_managers.insert(pid, Arc::new(FileDescriptorManager::new(file_descriptors)));
 }
@@ -175,7 +177,7 @@ pub fn write(fd: FileDescriptor, buf: &[u8]) -> usize {
             current_file_descriptor_manager.file_descriptors.get(&fd)
         {
             match mode {
-                OpenMode::Write => inode.read().write_at(*offset, buf),
+                OpenMode::Write | OpenMode::ReadWrite => inode.read().write_at(*offset, buf),
 
                 _ => 0,
             }
@@ -268,14 +270,14 @@ pub fn create(path: String, ty: InodeTy) -> Option<FileDescriptor> {
     if let Some(current_file_descriptor_manager) = get_file_descriptor_manager() {
         if path.starts_with("/") {
             let mut name = String::new();
-            let parrent_path = {
+            let parent_path = {
                 let mut path = path.clone();
                 while !path.ends_with("/") {
                     name.push(path.pop().unwrap());
                 }
                 path
             };
-            let parent = get_inode_by_path(parrent_path)?;
+            let parent = get_inode_by_path(parent_path)?;
             parent.read().create(name.clone(), ty)?;
             open(path, OpenMode::Write)
         } else {

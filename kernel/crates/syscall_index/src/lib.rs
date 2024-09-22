@@ -29,6 +29,7 @@ pub enum SyscallIndex {
     LSeek,
     Kill,
     SBrk,
+    Create,
 }
 
 #[derive(Debug)]

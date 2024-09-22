@@ -38,5 +38,6 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::LSeek => lseek(arg1, arg2),
         SyscallIndex::Kill => kill_process(arg1),
         SyscallIndex::SBrk => sbrk(arg1),
+        SyscallIndex::Create => create(arg1, arg2, arg3),
     }
 }

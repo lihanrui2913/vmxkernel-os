@@ -1,6 +1,23 @@
 #![no_std]
+#![feature(c_size_t)]
 
-use core::ffi::{c_int, c_void};
+mod c_str;
+
+extern crate alloc;
+
+use alloc::string::String;
+use core::ffi::{c_char, c_int, c_void};
+use vstd::fs::OpenMode;
+
+use c_str::CStr;
+
+#[no_mangle]
+pub extern "C" fn open(path: *const c_char, mode: c_int) -> c_int {
+    vstd::fs::open(
+        String::from(unsafe { CStr::from_ptr(path).to_str().unwrap() }),
+        OpenMode::from(mode as usize),
+    ) as c_int
+}
 
 #[no_mangle]
 pub extern "C" fn close(fd: c_int) -> c_int {
