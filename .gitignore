@@ -4,5 +4,3 @@
 /vmxOS.*
 /Makefile
 *.elf
-*.o
-*.txt

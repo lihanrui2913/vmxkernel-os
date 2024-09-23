@@ -10,6 +10,7 @@ use spin::Mutex;
 use crate::task::get_current_process_id;
 
 use super::{
+    ext4::Ext4Volume,
     fat32::Fat32Volume,
     vfs::inode::{mount_to, FileInfo, InodeRef, InodeTy},
     ROOT,
@@ -266,7 +267,7 @@ pub fn get_cwd() -> String {
     }
 }
 
-pub fn create(path: String, ty: InodeTy) -> Option<FileDescriptor> {
+pub fn create(path: String, ty: InodeTy, mode: OpenMode) -> Option<FileDescriptor> {
     if let Some(current_file_descriptor_manager) = get_file_descriptor_manager() {
         if path.starts_with("/") {
             let mut name = String::new();
@@ -278,13 +279,15 @@ pub fn create(path: String, ty: InodeTy) -> Option<FileDescriptor> {
                 path
             };
             let parent = get_inode_by_path(parent_path)?;
-            parent.read().create(name.clone(), ty)?;
-            open(path, OpenMode::Write)
+            let inode = parent.read().create(name.clone(), ty)?;
+            let file_descriptor = current_file_descriptor_manager.add_inode(inode, mode);
+            Some(file_descriptor)
         } else {
             let cwd = current_file_descriptor_manager.get_cwd();
             let parent = get_inode_by_path(cwd.clone())?;
-            parent.read().create(path.clone(), ty)?;
-            open(cwd + path.as_str(), OpenMode::Write)
+            let inode = parent.read().create(path.clone(), ty)?;
+            let file_descriptor = current_file_descriptor_manager.add_inode(inode, mode);
+            Some(file_descriptor)
         }
     } else {
         None
@@ -328,8 +331,23 @@ pub fn mount(to: String, partition_path: String) -> Option<()> {
         name.chars().rev().collect()
     };
 
-    let volumne = Fat32Volume::new(partition_inode.clone());
-    mount_to(volumne, to_father, to_name);
+    let mut volumne = Fat32Volume::new(partition_inode.clone());
+
+    // Another filesystems
+    // if volumne.is_none() {
+    //     volumne = Ext4Volume::new(partition_inode.clone());
+    // }
+
+    if volumne.is_none() {
+        volumne = Ext4Volume::new(partition_inode.clone());
+    }
+
+    if volumne.is_none() {
+        log::error!("Cannot mount new file system");
+        return None;
+    }
+
+    mount_to(volumne.unwrap(), to_father, to_name);
     Some(())
 }
 

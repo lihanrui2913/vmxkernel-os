@@ -1,4 +1,6 @@
 #include "stdio.h"
+#include "fcntl.h"
+#include "unistd.h"
 
 int main()
 {
@@ -11,6 +13,9 @@ int main()
     scanf("%d", &num2);
     printf("num2 is %d\n", num2);
     printf("Result is %d\n", num1 + num2);
+
+    int fd = creat("/test.txt", O_RDWR);
+    write(fd, "Hello fs world!!!", 17);
 
     return 0;
 }

@@ -30,6 +30,7 @@ pub enum SyscallIndex {
     Kill,
     SBrk,
     Create,
+    Mount,
 }
 
 #[derive(Debug)]

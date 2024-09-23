@@ -11,6 +11,15 @@ use vstd::fs::OpenMode;
 
 use c_str::CStr;
 
+
+#[no_mangle]
+pub extern "C" fn creat(path: *const c_char, mode: c_int) -> c_int {
+    vstd::fs::create(
+        String::from(unsafe { CStr::from_ptr(path).to_str().unwrap() }),
+        OpenMode::from(mode as usize),
+    ) as c_int
+}
+
 #[no_mangle]
 pub extern "C" fn open(path: *const c_char, mode: c_int) -> c_int {
     vstd::fs::open(

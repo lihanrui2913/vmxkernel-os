@@ -332,6 +332,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bfcf67fea2815c2fc3b90873fae90957be12ff417335dfadc7f52927feb03b2"
 
 [[package]]
+name = "ext4_rs"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "907d5565457c58d056c02fc4475563bf662cf17a22bca866a684f05f99d3e0d3"
+dependencies = [
+ "bitflags 2.6.0",
+ "log",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -496,6 +506,7 @@ dependencies = [
  "bitflags 2.6.0",
  "colorz",
  "crossbeam-queue",
+ "ext4_rs",
  "fatfs 0.4.0",
  "good_memory_allocator",
  "gpt_disk_io",

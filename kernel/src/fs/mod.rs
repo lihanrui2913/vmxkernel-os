@@ -9,6 +9,7 @@ use vfs::{
     root::RootFS,
 };
 
+mod ext4;
 mod fat32;
 pub mod operation;
 pub mod vfs;
@@ -27,15 +28,19 @@ pub fn init() {
     ROOT.lock().write().when_mounted("/".to_string(), None);
 
     vfs::dev::init();
+    vfs::mnt::init();
 
     let root_partition = ROOT_PARTITION.lock().clone().unwrap().clone();
-    let root_fs = Fat32Volume::new(root_partition.clone());
+    let root_fs = Fat32Volume::new(root_partition.clone()).expect("Cannot mount rootfs");
 
     let dev_fs = ROOT.lock().read().open("dev".into()).unwrap();
+    let mnt_fs = ROOT.lock().read().open("mnt".into()).unwrap();
 
     *ROOT.lock() = root_fs.clone();
 
     root_fs.write().when_mounted("/".to_string(), None);
     dev_fs.write().when_umounted();
+    mnt_fs.write().when_umounted();
     mount_to(dev_fs.clone(), root_fs.clone(), "dev".to_string());
+    mount_to(mnt_fs.clone(), root_fs.clone(), "mnt".to_string());
 }

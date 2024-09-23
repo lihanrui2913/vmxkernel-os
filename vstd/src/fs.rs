@@ -174,3 +174,15 @@ pub fn ioctl(fd: usize, cmd: usize, arg: usize) -> usize {
 pub fn lseek(fd: usize, ptr: usize) -> usize {
     crate::syscall(SyscallIndex::LSeek as u64, fd, ptr, 0, 0, 0)
 }
+
+pub fn mount(path: String, partition: String) -> Result<(), ()> {
+    crate::syscall(
+        SyscallIndex::Mount as u64,
+        path.as_ptr() as usize,
+        path.len(),
+        partition.as_ptr() as usize,
+        partition.len(),
+        0,
+    );
+    Ok(())
+}

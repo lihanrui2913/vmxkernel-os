@@ -262,14 +262,39 @@ pub fn sbrk(size: usize) -> usize {
     }
 }
 
-pub fn create(path: usize, path_len: usize, _mode: usize) -> usize {
-    let slice = unsafe { core::slice::from_raw_parts(path as _, path_len) };
-    let path = String::from(str::from_utf8(slice).expect("Cannot from utf8"));
+pub fn create(path: usize, path_len: usize, mode: usize) -> usize {
+    let path = String::from(
+        str::from_utf8(unsafe { core::slice::from_raw_parts(path as *const u8, path_len) })
+            .expect("Cannot from utf8"),
+    );
 
-    let fd = crate::fs::operation::create(path, InodeTy::File);
+    let fd = crate::fs::operation::create(path, InodeTy::File, OpenMode::from(mode));
+    fd.unwrap_or(usize::MAX)
+}
 
-    if fd.is_some() {
-        return fd.unwrap();
+pub fn mount(
+    path_addr: usize,
+    path_len: usize,
+    partition_addr: usize,
+    partition_len: usize,
+) -> usize {
+    let path = String::from(
+        str::from_utf8(unsafe { core::slice::from_raw_parts(path_addr as *const u8, path_len) })
+            .expect("Cannot from utf8"),
+    );
+
+    let partition = String::from(
+        str::from_utf8(unsafe {
+            core::slice::from_raw_parts(partition_addr as *const u8, partition_len)
+        })
+        .expect("Cannot from utf8"),
+    );
+
+    let ret = crate::fs::operation::mount(path, partition);
+
+    if ret.is_none() {
+        return usize::MAX;
     }
-    usize::MAX
+
+    0
 }

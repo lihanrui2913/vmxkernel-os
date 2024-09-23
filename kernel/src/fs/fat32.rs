@@ -67,12 +67,15 @@ pub struct Fat32Volume {
 }
 
 impl Fat32Volume {
-    pub fn new(dev: InodeRef) -> InodeRef {
+    pub fn new(dev: InodeRef) -> Option<InodeRef> {
         let io = InodeRefIO::new(dev);
-        let vol = Box::leak(Box::new(FileSystem::new(io, FsOptions::new()).unwrap()));
+        let vol = FileSystem::new(io, FsOptions::new());
+        if vol.is_err() {
+            return None;
+        }
 
         let inode = Self {
-            vol,
+            vol: Box::leak(Box::new(vol.unwrap())),
             virtual_inodes: BTreeMap::new(),
             path: String::new(),
         };
@@ -80,7 +83,7 @@ impl Fat32Volume {
         ref_to_mut(&*inode_ref.read())
             .virtual_inodes
             .insert(".".into(), inode_ref.clone());
-        inode_ref
+        Some(inode_ref)
     }
 }
 
