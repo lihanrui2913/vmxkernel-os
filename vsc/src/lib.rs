@@ -11,7 +11,6 @@ use vstd::fs::OpenMode;
 
 use c_str::CStr;
 
-
 #[no_mangle]
 pub extern "C" fn creat(path: *const c_char, mode: c_int) -> c_int {
     vstd::fs::create(
