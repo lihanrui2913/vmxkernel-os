@@ -15,16 +15,13 @@ impl RootFS {
             nodes: BTreeMap::new(),
             path: String::new(),
         }));
-        ref_to_mut(&*inode.read())
-            .nodes
-            .insert(".".into(), inode.clone());
-        inode.clone()
+        inode.write().nodes.insert(".".into(), inode.clone());
+        inode
     }
 }
 
 impl Inode for RootFS {
     fn when_mounted(&mut self, path: String, father: Option<InodeRef>) {
-        log::info!("mount to {}", path);
         self.path.clear();
         self.path.push_str(path.as_str());
         if let Some(father) = father {
@@ -32,13 +29,7 @@ impl Inode for RootFS {
         }
     }
 
-    fn when_umounted(&mut self) {
-        for (name, node) in self.nodes.iter() {
-            if name != "." && name != ".." {
-                node.write().when_umounted();
-            }
-        }
-    }
+    fn when_umounted(&mut self) {}
 
     fn mount(&self, node: InodeRef, name: String) {
         ref_to_mut(self).nodes.insert(name, node);

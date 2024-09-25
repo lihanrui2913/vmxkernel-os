@@ -2,7 +2,7 @@
 #![no_main]
 
 use core::panic::PanicInfo;
-use kernel::alloc::string::String;
+use kernel::alloc::string::ToString;
 use kernel::device::hpet::HPET;
 use kernel::device::rtc::RtcDateTime;
 // use kernel::device::terminal::terminal_manual_flush;
@@ -38,11 +38,11 @@ extern "C" fn _start() -> ! {
 
     kernel::fs::init();
 
-    let inode = kernel_open(String::from("/init.elf")).expect("Cannot open init.elf");
+    let inode = kernel_open("/root/init.elf".to_string()).expect("Cannot open init.elf");
     let size = inode.read().size();
     let buf = kernel::alloc::vec![0u8; size].leak();
     inode.read().read_at(0, buf);
-    Process::new_user_process("init", buf);
+    Process::new_user_process("/root/init.elf", buf);
 
     START_SCHEDULE.store(true, core::sync::atomic::Ordering::SeqCst);
     x86_64::instructions::interrupts::enable();

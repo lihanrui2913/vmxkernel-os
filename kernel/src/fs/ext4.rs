@@ -11,7 +11,10 @@ use spin::RwLock;
 
 use crate::ref_to_mut;
 
-use super::vfs::inode::{FileInfo, Inode, InodeRef, InodeTy};
+use super::{
+    operation::kernel_open,
+    vfs::inode::{FileInfo, Inode, InodeRef, InodeTy},
+};
 
 pub struct Ext4InodeIO {
     inode: InodeRef,
@@ -77,24 +80,70 @@ impl Inode for Ext4Volume {
     }
 
     fn open(&self, name: String) -> Option<InodeRef> {
+        let self_inode = kernel_open(self.get_path());
+
         if let Some(inode) = self.virtual_inodes.get(&name) {
             return Some(inode.clone());
         } else {
             return self
                 .volume
-                .generic_open(&name, &mut 2, false, 0, &mut 0)
+                .generic_open(name.as_str(), &mut 2, false, 0, &mut 0)
                 .ok()
                 .map_or_else(
                     || None,
                     |x| {
                         let ty = self.volume.dir_has_entry(x);
                         if ty {
-                            return Some(Ext4Dir::new(self.volume.clone(), x));
+                            let inode = Ext4Dir::new(self.volume.clone(), x);
+                            inode
+                                .write()
+                                .when_mounted(self.get_path() + name.as_str() + "/", self_inode);
+                            return Some(inode);
                         } else {
-                            return Some(Ext4File::new(self.volume.clone(), x));
+                            let inode = Ext4File::new(self.volume.clone(), x);
+                            inode
+                                .write()
+                                .when_mounted(self.get_path() + name.as_str() + "/", self_inode);
+                            return Some(inode);
                         }
                     },
                 );
+        }
+    }
+
+    fn create(&self, name: String, ty: InodeTy) -> Option<InodeRef> {
+        let self_inode = kernel_open(self.get_path());
+
+        let inode = self.volume.create(
+            2,
+            name.as_str(),
+            match ty {
+                InodeTy::Dir => 0x4000,
+                InodeTy::File => 0x8000,
+            },
+        );
+
+        if inode.is_err() {
+            return None;
+        }
+
+        let inode_id = inode.unwrap().inode_num;
+
+        match ty {
+            InodeTy::Dir => {
+                let inode = Ext4Dir::new(self.volume.clone(), inode_id);
+                inode
+                    .write()
+                    .when_mounted(self.get_path() + name.as_str() + "/", self_inode);
+                return Some(inode);
+            }
+            InodeTy::File => {
+                let inode = Ext4File::new(self.volume.clone(), inode_id);
+                inode
+                    .write()
+                    .when_mounted(self.get_path() + name.as_str() + "/", self_inode);
+                return Some(inode);
+            }
         }
     }
 
@@ -110,10 +159,10 @@ impl Inode for Ext4Volume {
         for entry in self.volume.dir_get_entries(2).iter() {
             vec.push(FileInfo::new(
                 entry.get_name().clone(),
-                if entry.get_de_type() == 2 {
-                    InodeTy::Dir
-                } else {
+                if entry.get_de_type() != 2 {
                     InodeTy::File
+                } else {
+                    InodeTy::Dir
                 },
             ))
         }
@@ -167,6 +216,8 @@ impl Inode for Ext4Dir {
     }
 
     fn open(&self, name: String) -> Option<InodeRef> {
+        let self_inode = kernel_open(self.get_path());
+
         if let Some(node) = self.virtual_inodes.get(&name) {
             return Some(node.clone());
         } else {
@@ -185,12 +236,56 @@ impl Inode for Ext4Dir {
                     |x| {
                         let ty = self.volume.dir_has_entry(x);
                         if ty {
-                            return Some(Ext4Dir::new(self.volume.clone(), x));
+                            let inode = Ext4Dir::new(self.volume.clone(), x);
+                            inode
+                                .write()
+                                .when_mounted(self.get_path() + name.as_str() + "/", self_inode);
+                            return Some(inode);
                         } else {
-                            return Some(Ext4File::new(self.volume.clone(), x));
+                            let inode = Ext4File::new(self.volume.clone(), x);
+                            inode
+                                .write()
+                                .when_mounted(self.get_path() + name.as_str() + "/", self_inode);
+                            return Some(inode);
                         }
                     },
                 );
+        }
+    }
+
+    fn create(&self, name: String, ty: InodeTy) -> Option<InodeRef> {
+        let self_inode = kernel_open(self.get_path());
+
+        let inode = self.volume.create(
+            self.inode_id,
+            name.as_str(),
+            match ty {
+                InodeTy::Dir => 0x4000,
+                InodeTy::File => 0x8000,
+            },
+        );
+
+        if inode.is_err() {
+            return None;
+        }
+
+        let inode_id = inode.unwrap().inode_num;
+
+        match ty {
+            InodeTy::Dir => {
+                let inode = Ext4Dir::new(self.volume.clone(), inode_id);
+                inode
+                    .write()
+                    .when_mounted(self.get_path() + name.as_str() + "/", self_inode);
+                return Some(inode);
+            }
+            InodeTy::File => {
+                let inode = Ext4File::new(self.volume.clone(), inode_id);
+                inode
+                    .write()
+                    .when_mounted(self.get_path() + name.as_str() + "/", self_inode);
+                return Some(inode);
+            }
         }
     }
 
@@ -207,10 +302,10 @@ impl Inode for Ext4Dir {
             if entry.get_name() != ".".to_string() && entry.get_name() != "..".to_string() {
                 vec.push(FileInfo::new(
                     entry.get_name().clone(),
-                    if entry.get_de_type() == 2 {
-                        InodeTy::Dir
-                    } else {
+                    if entry.get_de_type() != 2 {
                         InodeTy::File
+                    } else {
+                        InodeTy::Dir
                     },
                 ))
             }
@@ -249,15 +344,13 @@ impl Inode for Ext4File {
     }
 
     fn read_at(&self, offset: usize, buf: &mut [u8]) -> usize {
-        self.volume
-            .read_at(self.inode_id, offset, buf)
-            .unwrap_or(usize::MAX)
+        self.volume.read_at(self.inode_id, offset, buf).unwrap_or(0)
     }
 
     fn write_at(&self, offset: usize, buf: &[u8]) -> usize {
         self.volume
             .write_at(self.inode_id, offset, buf)
-            .unwrap_or(usize::MAX)
+            .unwrap_or(0)
     }
 
     fn size(&self) -> usize {

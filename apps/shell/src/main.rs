@@ -65,6 +65,7 @@ pub fn main(args: Vec<String>) -> usize {
         command_function_list.insert("mount", mount);
         command_function_list.insert("testfb", testfb);
         command_function_list.insert("testkvm", testkvm);
+        command_function_list.insert("touch", touch);
         command_function_list.insert("exit", exit);
     }
 
