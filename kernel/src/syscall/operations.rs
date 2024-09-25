@@ -100,6 +100,10 @@ pub fn fsize(fd: usize) -> usize {
 pub fn execve(buf_addr: usize, buf_len: usize, args_ptr: usize, args_len: usize) -> usize {
     let buffer = unsafe { slice::from_raw_parts(buf_addr as _, buf_len) };
     let new_process = crate::task::process::Process::new_user_process("task", buffer);
+    if new_process.is_none() {
+        return usize::MAX;
+    }
+    let new_process = new_process.unwrap();
     new_process.write().args_value = args_ptr;
     new_process.write().args_len = args_len;
     let ret = new_process.read().id.0 as usize;

@@ -20,6 +20,9 @@ pub fn try_run(path: String, args: &str) -> Option<()> {
     let addr = alloc::vec![0u8; args.len()].leak();
     addr.copy_from_slice(args.as_bytes());
     let pid = execve(&buf, addr.as_ptr() as usize, addr.len());
+    if pid == usize::MAX {
+        return None;
+    }
     wait(pid);
 
     Some(())

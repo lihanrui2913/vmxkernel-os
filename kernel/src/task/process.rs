@@ -71,8 +71,8 @@ impl Process {
         process
     }
 
-    pub fn new_user_process(name: &str, elf_data: &'static [u8]) -> SharedProcess {
-        let binary = ProcessBinary::parse(elf_data);
+    pub fn new_user_process(name: &str, elf_data: &'static [u8]) -> Option<SharedProcess> {
+        let binary = ProcessBinary::parse(elf_data)?;
         let process = interrupts::without_interrupts(|| {
             let process = Arc::new(RwLock::new(Box::new(Self::new(name))));
             ProcessBinary::map_segments(&binary, &mut process.write().page_table);
@@ -86,7 +86,7 @@ impl Process {
             Arc::new(RwLock::new(Terminal::new())),
         );
 
-        return process;
+        return Some(process);
     }
 
     pub fn exit_process(&self) {
@@ -103,8 +103,12 @@ impl Process {
 struct ProcessBinary;
 
 impl ProcessBinary {
-    fn parse(bin: &'static [u8]) -> File<'static> {
-        File::parse(bin).expect("Failed to parse ELF binary")
+    fn parse(bin: &'static [u8]) -> Option<File<'static>> {
+        let file = File::parse(bin);
+        if file.is_err() {
+            return None;
+        }
+        Some(file.expect("Failed to parse ELF binary"))
     }
 
     fn map_segments(elf_file: &File, page_table: &mut OffsetPageTable<'static>) {
