@@ -157,14 +157,16 @@ impl Inode for Ext4Volume {
             vec.push(FileInfo::new(name.clone(), inode.read().inode_type()));
         }
         for entry in self.volume.dir_get_entries(2).iter() {
-            vec.push(FileInfo::new(
-                entry.get_name().clone(),
-                if entry.get_de_type() != 2 {
-                    InodeTy::File
-                } else {
-                    InodeTy::Dir
-                },
-            ))
+            if entry.get_name() != ".".to_string() && entry.get_name() != "..".to_string() {
+                vec.push(FileInfo::new(
+                    entry.get_name().clone(),
+                    if entry.get_de_type() != 2 {
+                        InodeTy::File
+                    } else {
+                        InodeTy::Dir
+                    },
+                ))
+            }
         }
         vec
     }

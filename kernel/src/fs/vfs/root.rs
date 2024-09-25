@@ -29,7 +29,13 @@ impl Inode for RootFS {
         }
     }
 
-    fn when_umounted(&mut self) {}
+    fn when_umounted(&mut self) {
+        for (name, node) in self.nodes.iter() {
+            if name != "." && name != ".." {
+                node.write().when_umounted();
+            }
+        }
+    }
 
     fn mount(&self, node: InodeRef, name: String) {
         ref_to_mut(self).nodes.insert(name, node);
