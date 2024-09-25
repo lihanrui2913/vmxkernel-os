@@ -22,6 +22,7 @@ impl Allocator for AllocatorImpl {
 static NVME_CONS: Mutex<Vec<NvmeDevice<AllocatorImpl>>> = Mutex::new(Vec::new());
 static NVME_SIZES: Mutex<BTreeMap<usize, usize>> = Mutex::new(BTreeMap::new());
 
+// 此驱动有问题，暂时先不初始化
 pub fn init() {
     let pci_devices = get_device_by_class_code(0x01, 0x08);
     if pci_devices.len() > 0 {

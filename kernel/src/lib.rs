@@ -31,7 +31,7 @@ pub fn init() {
     arch::interrupts::init();
     device::mouse::init();
     device::pci::init();
-    device::nvme::init();
+    // device::nvme::init();
     device::xhci::init();
     virt::kvm::init();
     syscall::init();

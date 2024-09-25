@@ -6,20 +6,20 @@ use alloc::{
     sync::Arc,
     vec::Vec,
 };
-use ext4_rs::{BlockDevice, Ext4};
+use ext4_rs::{BlockDevice, Ext4, BLOCK_SIZE};
 use spin::RwLock;
 
 use crate::ref_to_mut;
 
 use super::vfs::inode::{FileInfo, Inode, InodeRef, InodeTy};
 
-pub struct Ext4InodeIo {
+pub struct Ext4InodeIO {
     inode: InodeRef,
 }
 
-impl BlockDevice for Ext4InodeIo {
+impl BlockDevice for Ext4InodeIO {
     fn read_offset(&self, offset: usize) -> alloc::vec::Vec<u8> {
-        let mut buf = alloc::vec![0u8; 512];
+        let mut buf = alloc::vec![0u8; BLOCK_SIZE];
         self.inode.read().read_at(offset, &mut buf);
         buf
     }
@@ -37,7 +37,7 @@ pub struct Ext4Volume {
 
 impl Ext4Volume {
     pub fn new(dev: InodeRef) -> Option<InodeRef> {
-        let block_device = Arc::new(Ext4InodeIo { inode: dev });
+        let block_device = Arc::new(Ext4InodeIO { inode: dev });
         let volume = Arc::new(Ext4::open(block_device));
         let inode = Self {
             volume,
@@ -71,7 +71,9 @@ impl Inode for Ext4Volume {
     }
 
     fn mount(&self, node: InodeRef, name: String) {
-        ref_to_mut(self).virtual_inodes.insert(name.clone(), node);
+        ref_to_mut(self)
+            .virtual_inodes
+            .insert(name.clone(), node.clone());
     }
 
     fn open(&self, name: String) -> Option<InodeRef> {

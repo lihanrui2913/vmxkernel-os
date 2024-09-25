@@ -1,6 +1,7 @@
 /.vscode
 /Cargo.lock
 /target
-/vmxOS.*
+*.img
+*.vmdk
 /Makefile
 *.elf
