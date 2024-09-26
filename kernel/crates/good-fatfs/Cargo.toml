@@ -36,7 +36,7 @@ log_level_debug = ["log_level_info"]
 log_level_trace = ["log_level_debug"]
 
 # Default features
-default = ["chrono", "std", "alloc", "lfn", "unicode", "log_level_trace"]
+default = ["alloc", "lfn", "unicode"]
 
 [dependencies]
 bitflags = "1.0"
