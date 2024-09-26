@@ -52,6 +52,16 @@ pub unsafe fn ref_current_page_table() -> OffsetPageTable<'static> {
     OffsetPageTable::new(&mut *page_table, physical_memory_offset)
 }
 
+/// Read something from the address.
+pub fn read_from_addr<T>(addr: VirtAddr) -> T {
+    unsafe { addr.as_ptr::<T>().read() }
+}
+
 pub fn addr_to_mut_ref<T>(addr: VirtAddr) -> &'static mut T {
     unsafe { &mut (*addr.as_mut_ptr()) }
+}
+
+/// Returns a mutable reference to the array on the address.
+pub fn addr_to_array<T>(addr: VirtAddr, len: usize) -> &'static mut [T] {
+    unsafe { core::slice::from_raw_parts_mut(addr.as_mut_ptr(), len) }
 }

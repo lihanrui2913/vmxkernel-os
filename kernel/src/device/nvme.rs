@@ -4,9 +4,9 @@ use nvme::{
     nvme::NvmeDevice,
 };
 use spin::Mutex;
-use x86_64::{structures::paging::PageTableFlags, PhysAddr, VirtAddr};
+use x86_64::{PhysAddr, VirtAddr};
 
-use crate::memory::{convert_physical_to_virtual, MemoryManager};
+use crate::memory::{convert_physical_to_virtual, MappingType, MemoryManager};
 
 use super::pci::get_device_by_class_code;
 
@@ -51,7 +51,7 @@ pub fn init() {
                     vaddr.as_u64() as usize,
                     addr.as_u64() as usize,
                     len,
-                    PageTableFlags::PRESENT | PageTableFlags::WRITABLE | PageTableFlags::NO_EXECUTE,
+                    MappingType::KernelData.flags(),
                 );
 
                 log::info!("NVMe OK");
