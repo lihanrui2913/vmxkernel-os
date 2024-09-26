@@ -1,6 +1,6 @@
 use core::cmp;
 use core::convert::TryFrom;
-use log::{error, warn, trace};
+use log::{error, trace, warn};
 
 use crate::dir_entry::DirEntryEditor;
 use crate::error::Error;
