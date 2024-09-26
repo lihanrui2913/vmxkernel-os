@@ -2,8 +2,7 @@
 name = "fatfs"
 version = "0.4.0"
 authors = ["Rafał Harabień <rafalh92@outlook.com>"]
-edition = "2021"
-rust-version = "1.65"
+edition = "2018"
 repository = "https://github.com/rafalh/rust-fatfs"
 readme = "README.md"
 keywords = ["fat", "filesystem", "no_std"]
@@ -40,8 +39,9 @@ log_level_trace = ["log_level_debug"]
 default = ["chrono", "std", "alloc", "lfn", "unicode", "log_level_trace"]
 
 [dependencies]
-bitflags = { version = "2", default-features = false }
-log = { version = "0.4", default-features = false }
+bitflags = "1.0"
+log = "0.4"
+spin = "0.9"
 chrono = { version = "0.4", default-features = false, features = ["clock"], optional = true }
 
 [dev-dependencies]

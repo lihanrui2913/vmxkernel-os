@@ -3,10 +3,14 @@ use alloc::string::String;
 use core::borrow::BorrowMut;
 use core::cell::{Cell, RefCell};
 use core::char;
+use core::cmp;
 use core::convert::TryFrom;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::u32;
+use log::{error, trace, warn};
+
+use spin::RwLock;
 
 use crate::boot_sector::{format_boot_sector, BiosParameterBlock, BootSector};
 use crate::dir::{Dir, DirRawStream};
@@ -311,8 +315,8 @@ impl FileSystemStats {
 /// A FAT filesystem object.
 ///
 /// `FileSystem` struct is representing a state of a mounted FAT volume.
-pub struct FileSystem<IO: ReadWriteSeek, TP = DefaultTimeProvider, OCC = LossyOemCpConverter> {
-    pub(crate) disk: RefCell<IO>,
+pub struct FileSystem<IO: ReadWriteSeek, TP, OCC> {
+    pub(crate) disk: RwLock<IO>,
     pub(crate) options: FsOptions<TP, OCC>,
     fat_type: FatType,
     bpb: BiosParameterBlock,
@@ -399,7 +403,7 @@ impl<IO: Read + Write + Seek, TP, OCC> FileSystem<IO, TP, OCC> {
         let status_flags = bpb.status_flags();
         trace!("FileSystem::new end");
         Ok(Self {
-            disk: RefCell::new(disk),
+            disk: RwLock::new(disk),
             options,
             fat_type,
             bpb,
@@ -496,7 +500,7 @@ impl<IO: Read + Write + Seek, TP, OCC> FileSystem<IO, TP, OCC> {
             alloc_cluster(&mut fat, self.fat_type, prev_cluster, hint, self.total_clusters)?
         };
         if zero {
-            let mut disk = self.disk.borrow_mut();
+            let mut disk = self.disk.write();
             disk.seek(SeekFrom::Start(self.offset_from_cluster(cluster)))?;
             write_zeros(&mut *disk, u64::from(self.cluster_size()))?;
         }
@@ -570,7 +574,7 @@ impl<IO: Read + Write + Seek, TP, OCC> FileSystem<IO, TP, OCC> {
     fn flush_fs_info(&self) -> Result<(), Error<IO::Error>> {
         let mut fs_info = self.fs_info.borrow_mut();
         if self.fat_type == FatType::Fat32 && fs_info.dirty {
-            let mut disk = self.disk.borrow_mut();
+            let mut disk = self.disk.write();
             let fs_info_sector_offset = self.offset_from_sector(u32::from(self.bpb.fs_info_sector));
             disk.seek(SeekFrom::Start(fs_info_sector_offset))?;
             fs_info.serialize(&mut *disk)?;
@@ -597,7 +601,7 @@ impl<IO: Read + Write + Seek, TP, OCC> FileSystem<IO, TP, OCC> {
         } else {
             0x025
         };
-        let mut disk = self.disk.borrow_mut();
+        let mut disk = self.disk.write();
         disk.seek(io::SeekFrom::Start(offset))?;
         disk.write_u8(encoded)?;
         self.current_status_flags.set(flags);
@@ -700,13 +704,13 @@ impl<IO: ReadWriteSeek, TP, OCC> IoBase for FsIoAdapter<'_, IO, TP, OCC> {
 
 impl<IO: ReadWriteSeek, TP, OCC> Read for FsIoAdapter<'_, IO, TP, OCC> {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-        self.fs.disk.borrow_mut().read(buf)
+        self.fs.disk.write().read(buf)
     }
 }
 
 impl<IO: ReadWriteSeek, TP, OCC> Write for FsIoAdapter<'_, IO, TP, OCC> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
-        let size = self.fs.disk.borrow_mut().write(buf)?;
+        let size = self.fs.disk.write().write(buf)?;
         if size > 0 {
             self.fs.set_dirty_flag(true)?;
         }
@@ -714,13 +718,13 @@ impl<IO: ReadWriteSeek, TP, OCC> Write for FsIoAdapter<'_, IO, TP, OCC> {
     }
 
     fn flush(&mut self) -> Result<(), Self::Error> {
-        self.fs.disk.borrow_mut().flush()
+        self.fs.disk.write().flush()
     }
 }
 
 impl<IO: ReadWriteSeek, TP, OCC> Seek for FsIoAdapter<'_, IO, TP, OCC> {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Error> {
-        self.fs.disk.borrow_mut().seek(pos)
+        self.fs.disk.write().seek(pos)
     }
 }
 
@@ -804,7 +808,7 @@ impl<B, S: IoBase> IoBase for DiskSlice<B, S> {
 impl<B: BorrowMut<S>, S: Read + Seek> Read for DiskSlice<B, S> {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
         let offset = self.begin + self.offset;
-        let read_size = (buf.len() as u64).min(self.size - self.offset) as usize;
+        let read_size = cmp::min(self.size - self.offset, buf.len() as u64) as usize;
         self.inner.borrow_mut().seek(SeekFrom::Start(offset))?;
         let size = self.inner.borrow_mut().read(&mut buf[..read_size])?;
         self.offset += size as u64;
@@ -815,7 +819,7 @@ impl<B: BorrowMut<S>, S: Read + Seek> Read for DiskSlice<B, S> {
 impl<B: BorrowMut<S>, S: Write + Seek> Write for DiskSlice<B, S> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
         let offset = self.begin + self.offset;
-        let write_size = (buf.len() as u64).min(self.size - self.offset) as usize;
+        let write_size = cmp::min(self.size - self.offset, buf.len() as u64) as usize;
         if write_size == 0 {
             return Ok(0);
         }
@@ -904,7 +908,7 @@ impl OemCpConverter for LossyOemCpConverter {
 pub(crate) fn write_zeros<IO: ReadWriteSeek>(disk: &mut IO, mut len: u64) -> Result<(), IO::Error> {
     const ZEROS: [u8; 512] = [0_u8; 512];
     while len > 0 {
-        let write_size = len.min(ZEROS.len() as u64) as usize;
+        let write_size = cmp::min(len, ZEROS.len() as u64) as usize;
         disk.write_all(&ZEROS[..write_size])?;
         len -= write_size as u64;
     }
@@ -924,39 +928,20 @@ fn write_zeros_until_end_of_sector<IO: ReadWriteSeek>(disk: &mut IO, bytes_per_s
 ///
 /// This struct implements a builder pattern.
 /// Options are specified as an argument for `format_volume` function.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct FormatVolumeOptions {
-    pub(crate) bytes_per_sector: u16,
+    pub(crate) bytes_per_sector: Option<u16>,
     pub(crate) total_sectors: Option<u32>,
     pub(crate) bytes_per_cluster: Option<u32>,
     pub(crate) fat_type: Option<FatType>,
-    pub(crate) max_root_dir_entries: u16,
-    pub(crate) fats: u8,
-    pub(crate) media: u8,
-    pub(crate) sectors_per_track: u16,
-    pub(crate) heads: u16,
+    pub(crate) max_root_dir_entries: Option<u16>,
+    pub(crate) fats: Option<u8>,
+    pub(crate) media: Option<u8>,
+    pub(crate) sectors_per_track: Option<u16>,
+    pub(crate) heads: Option<u16>,
     pub(crate) drive_num: Option<u8>,
-    pub(crate) volume_id: u32,
+    pub(crate) volume_id: Option<u32>,
     pub(crate) volume_label: Option<[u8; SFN_SIZE]>,
-}
-
-impl Default for FormatVolumeOptions {
-    fn default() -> Self {
-        Self {
-            bytes_per_sector: 512,
-            total_sectors: None,
-            bytes_per_cluster: None,
-            fat_type: None,
-            max_root_dir_entries: 512,
-            fats: 2,
-            media: 0xF8,
-            sectors_per_track: 0x20,
-            heads: 0x40,
-            drive_num: None,
-            volume_id: 0x1234_5678,
-            volume_label: None,
-        }
-    }
 }
 
 impl FormatVolumeOptions {
@@ -981,7 +966,7 @@ impl FormatVolumeOptions {
     #[must_use]
     pub fn bytes_per_cluster(mut self, bytes_per_cluster: u32) -> Self {
         assert!(
-            bytes_per_cluster.is_power_of_two() && bytes_per_cluster >= 512,
+            bytes_per_cluster.count_ones() == 1 && bytes_per_cluster >= 512,
             "Invalid bytes_per_cluster"
         );
         self.bytes_per_cluster = Some(bytes_per_cluster);
@@ -1011,10 +996,10 @@ impl FormatVolumeOptions {
     #[must_use]
     pub fn bytes_per_sector(mut self, bytes_per_sector: u16) -> Self {
         assert!(
-            bytes_per_sector.is_power_of_two() && bytes_per_sector >= 512,
+            bytes_per_sector.count_ones() == 1 && bytes_per_sector >= 512,
             "Invalid bytes_per_sector"
         );
-        self.bytes_per_sector = bytes_per_sector;
+        self.bytes_per_sector = Some(bytes_per_sector);
         self
     }
 
@@ -1035,7 +1020,7 @@ impl FormatVolumeOptions {
     /// Default is `512`.
     #[must_use]
     pub fn max_root_dir_entries(mut self, max_root_dir_entries: u16) -> Self {
-        self.max_root_dir_entries = max_root_dir_entries;
+        self.max_root_dir_entries = Some(max_root_dir_entries);
         self
     }
 
@@ -1050,7 +1035,7 @@ impl FormatVolumeOptions {
     #[must_use]
     pub fn fats(mut self, fats: u8) -> Self {
         assert!((1..=2).contains(&fats), "Invalid number of FATs");
-        self.fats = fats;
+        self.fats = Some(fats);
         self
     }
 
@@ -1059,7 +1044,7 @@ impl FormatVolumeOptions {
     /// Default is `0xF8`.
     #[must_use]
     pub fn media(mut self, media: u8) -> Self {
-        self.media = media;
+        self.media = Some(media);
         self
     }
 
@@ -1068,7 +1053,7 @@ impl FormatVolumeOptions {
     /// Default is `0x20`.
     #[must_use]
     pub fn sectors_per_track(mut self, sectors_per_track: u16) -> Self {
-        self.sectors_per_track = sectors_per_track;
+        self.sectors_per_track = Some(sectors_per_track);
         self
     }
 
@@ -1077,7 +1062,7 @@ impl FormatVolumeOptions {
     /// Default is `0x40`.
     #[must_use]
     pub fn heads(mut self, heads: u16) -> Self {
-        self.heads = heads;
+        self.heads = Some(heads);
         self
     }
 
@@ -1095,7 +1080,7 @@ impl FormatVolumeOptions {
     /// Default is `0x12345678`.
     #[must_use]
     pub fn volume_id(mut self, volume_id: u32) -> Self {
-        self.volume_id = volume_id;
+        self.volume_id = Some(volume_id);
         self
     }
 
@@ -1136,11 +1121,12 @@ pub fn format_volume<S: ReadWriteSeek>(storage: &mut S, options: FormatVolumeOpt
     trace!("format_volume");
     debug_assert!(storage.seek(SeekFrom::Current(0))? == 0);
 
+    let bytes_per_sector = options.bytes_per_sector.unwrap_or(512);
     let total_sectors = if let Some(total_sectors) = options.total_sectors {
         total_sectors
     } else {
         let total_bytes: u64 = storage.seek(SeekFrom::End(0))?;
-        let total_sectors_64 = total_bytes / u64::from(options.bytes_per_sector);
+        let total_sectors_64 = total_bytes / u64::from(bytes_per_sector);
         storage.seek(SeekFrom::Start(0))?;
         if total_sectors_64 > u64::from(u32::MAX) {
             error!("Volume has too many sectors: {}", total_sectors_64);
@@ -1150,7 +1136,7 @@ pub fn format_volume<S: ReadWriteSeek>(storage: &mut S, options: FormatVolumeOpt
     };
 
     // Create boot sector, validate and write to storage device
-    let (boot, fat_type) = format_boot_sector(&options, total_sectors)?;
+    let (boot, fat_type) = format_boot_sector(&options, total_sectors, bytes_per_sector)?;
     if boot.validate::<S::Error>().is_err() {
         return Err(Error::InvalidInput);
     }

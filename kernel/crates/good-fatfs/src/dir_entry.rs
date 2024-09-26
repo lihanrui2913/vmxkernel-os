@@ -7,6 +7,7 @@ use core::fmt;
 #[cfg(not(feature = "unicode"))]
 use core::iter;
 use core::str;
+use log::trace;
 
 #[cfg(feature = "lfn")]
 use crate::dir::LfnBuffer;
@@ -16,11 +17,10 @@ use crate::file::File;
 use crate::fs::{FatType, FileSystem, OemCpConverter, ReadWriteSeek};
 use crate::io::{self, Read, ReadLeExt, Write, WriteLeExt};
 use crate::time::{Date, DateTime};
-use crate::{Seek, SeekFrom};
 
 bitflags! {
     /// A FAT file attributes.
-    #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+    #[derive(Default)]
     pub struct FileAttributes: u8 {
         const READ_ONLY  = 0x01;
         const HIDDEN     = 0x02;
@@ -28,8 +28,8 @@ bitflags! {
         const VOLUME_ID  = 0x08;
         const DIRECTORY  = 0x10;
         const ARCHIVE    = 0x20;
-        const LFN        = Self::READ_ONLY.bits() | Self::HIDDEN.bits()
-                         | Self::SYSTEM.bits() | Self::VOLUME_ID.bits();
+        const LFN        = Self::READ_ONLY.bits | Self::HIDDEN.bits
+                         | Self::SYSTEM.bits | Self::VOLUME_ID.bits;
     }
 }
 
@@ -129,7 +129,7 @@ impl ShortName {
 
 #[allow(dead_code)]
 #[derive(Clone, Debug, Default)]
-pub struct DirFileEntryData {
+pub(crate) struct DirFileEntryData {
     name: [u8; SFN_SIZE],
     attrs: FileAttributes,
     reserved_0: u8,
@@ -253,8 +253,7 @@ impl DirFileEntryData {
         self.modify_time = date_time.time.encode().0;
     }
 
-    pub fn serialize<W: Write + Seek>(&self, wrt: &mut W) -> Result<(), W::Error> {
-        wrt.seek(SeekFrom::Current(28))?;
+    pub(crate) fn serialize<W: Write>(&self, wrt: &mut W) -> Result<(), W::Error> {
         wrt.write_all(&self.name)?;
         wrt.write_u8(self.attrs.bits())?;
         wrt.write_u8(self.reserved_0)?;
@@ -369,7 +368,7 @@ pub(crate) enum DirEntryData {
 }
 
 impl DirEntryData {
-    pub(crate) fn serialize<E: IoError, W: Write<Error = Error<E>> + Seek>(&self, wrt: &mut W) -> Result<(), Error<E>> {
+    pub(crate) fn serialize<E: IoError, W: Write<Error = Error<E>>>(&self, wrt: &mut W) -> Result<(), Error<E>> {
         trace!("DirEntryData::serialize");
         match self {
             DirEntryData::File(file) => file.serialize(wrt),
@@ -389,7 +388,7 @@ impl DirEntryData {
             Err(err) => {
                 return Err(err);
             }
-            Ok(()) => {}
+            Ok(_) => {}
         }
         let attrs = FileAttributes::from_bits_truncate(rdr.read_u8()?);
         if attrs & FileAttributes::LFN == FileAttributes::LFN {
@@ -458,9 +457,9 @@ impl DirEntryData {
 }
 
 #[derive(Clone, Debug)]
-pub struct DirEntryEditor {
+pub(crate) struct DirEntryEditor {
     data: DirFileEntryData,
-    pub pos: u64,
+    pos: u64,
     dirty: bool,
 }
 
@@ -524,7 +523,7 @@ impl DirEntryEditor {
     }
 
     fn write<IO: ReadWriteSeek, TP, OCC>(&self, fs: &FileSystem<IO, TP, OCC>) -> Result<(), IO::Error> {
-        let mut disk = fs.disk.borrow_mut();
+        let mut disk = fs.disk.write();
         disk.seek(io::SeekFrom::Start(self.pos))?;
         self.data.serialize(&mut *disk)
     }
@@ -535,7 +534,7 @@ impl DirEntryEditor {
 /// `DirEntry` is returned by `DirIter` when reading a directory.
 #[derive(Clone)]
 pub struct DirEntry<'a, IO: ReadWriteSeek, TP, OCC> {
-    pub data: DirFileEntryData,
+    pub(crate) data: DirFileEntryData,
     pub(crate) short_name: ShortName,
     #[cfg(feature = "lfn")]
     pub(crate) lfn_utf16: LfnBuffer,
@@ -746,7 +745,7 @@ mod tests {
     fn short_name_without_ext() {
         let oem_cp_conv = LossyOemCpConverter::new();
         assert_eq!(ShortName::new(b"FOO        ").to_string(&oem_cp_conv), "FOO");
-        assert_eq!(ShortName::new(b"LOOK AT    ").to_string(&oem_cp_conv), "LOOK AT");
+        assert_eq!(ShortName::new(&b"LOOK AT    ").to_string(&oem_cp_conv), "LOOK AT");
     }
 
     #[test]

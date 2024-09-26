@@ -1,5 +1,7 @@
 use core::borrow::BorrowMut;
+use core::cmp;
 use core::marker::PhantomData;
+use log::{trace, warn};
 
 use crate::error::{Error, IoError};
 use crate::fs::{FatType, FsStatusFlags};
@@ -226,7 +228,7 @@ where
     }
     // mark special entries 0x0FFFFFF0 - 0x0FFFFFFF as BAD if they exists on FAT32 volume
     if end_cluster > 0x0FFF_FFF0 {
-        let end_bad_cluster = (0x0FFF_FFFF + 1).min(end_cluster);
+        let end_bad_cluster = cmp::min(0x0FFF_FFFF + 1, end_cluster);
         for cluster in 0x0FFF_FFF0..end_bad_cluster {
             write_fat(fat, fat_type, cluster, FatValue::Bad)?;
         }
@@ -704,7 +706,7 @@ mod tests {
             let actual_cluster_numbers = iter.map(Result::ok).collect::<Vec<_>>();
             let expected_cluster_numbers = [0xA_u32, 0x14_u32, 0x15_u32, 0x16_u32, 0x19_u32, 0x1A_u32]
                 .iter()
-                .copied()
+                .cloned()
                 .map(Some)
                 .collect::<Vec<_>>();
             assert_eq!(actual_cluster_numbers, expected_cluster_numbers);

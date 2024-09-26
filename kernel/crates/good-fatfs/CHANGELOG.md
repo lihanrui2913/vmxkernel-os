@@ -30,17 +30,11 @@ New features:
 * Fix `format_volume` function panicking in debug build for FAT12 volumes with size below 1 MB
 * Fix index out of range panic when reading 248+ characters long file names with `alloc` feature disabled
 * Remove `byteorder` dependency.
-* Bump up minimal Rust compiler version to 1.65.0.
-* Build the crate using the 2021 edition.
+* Bump up minimal Rust compiler version to 1.48.0.
+* Build the crate using the 2018 edition.
 * Add support for compile-time configuration of logging levels via Cargo features. By default, all logging levels are
   enabled, including "trace" and up.
 * Disable chrono default features except `clock`
-* Use chrono naive types instead of deprecated `chrono::Date` (BREAKING CHANGE)
-* Add defaults for `FileSystem` generic parameters: `TP = DefaultTimeProvider`, `OCC = LossyOemCpConverter`
-
-Bug fixes:
-* Fix formatting volumes with size in range 4096-4199 KB
-* Always respect `fat_type` from `FormatVolumeOptions`
 
 0.3.4 (2020-07-20)
 ------------------

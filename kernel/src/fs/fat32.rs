@@ -29,7 +29,6 @@ impl IoBase for InodeRefIO {
 impl Read for InodeRefIO {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
         self.inode.read().read_at(self.offset, buf);
-
         self.seek(SeekFrom::Current(buf.len() as i64))?;
         Ok(buf.len())
     }
@@ -53,7 +52,7 @@ impl Seek for InodeRefIO {
             SeekFrom::Start(i) => self.offset = i as usize,
             SeekFrom::End(i) => {
                 let size = self.inode.read().size();
-                self.offset = size as usize - i as usize;
+                self.offset = size - i as usize;
             }
         }
         Ok(self.offset as u64)
@@ -61,7 +60,7 @@ impl Seek for InodeRefIO {
 }
 
 pub struct Fat32Volume {
-    vol: &'static mut FileSystem<InodeRefIO>,
+    vol: &'static mut FileSystem<InodeRefIO, NullTimeProvider, LossyOemCpConverter>,
     virtual_inodes: BTreeMap<String, InodeRef>,
     path: String,
 }

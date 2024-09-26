@@ -15,7 +15,7 @@ jobs:
           - rust_version: nightly
             run_tests: true
           # Minimal supported rustc version
-          - rust_version: 1.65.0
+          - rust_version: 1.48.0
             run_tests: false
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.rust_version == 'nightly' }}
@@ -24,26 +24,44 @@ jobs:
       RUST_BACKTRACE: 1
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
       - name: Install toolchain
-        run: |
-          rustup install ${{ matrix.rust_version }}
-          rustup default ${{ matrix.rust_version }}
-          rustc --version
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust_version }}
+          override: true
 
-      - name: Build
-        run: cargo build
+      - name: Print Rust compiler version
+        run: rustc --version
 
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Run cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose
         if: ${{ matrix.run_tests }}
 
-      - name: Build - no_std
-        run: cargo build --no-default-features
+      - name: Run cargo build - no_std
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --no-default-features
 
-      - name: Build - no_std, lfn
-        run: cargo build --no-default-features --features lfn
+      - name: Run cargo build - no_std, lfn
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --no-default-features --features lfn
 
-      - name: Build - no_std, alloc, lfn, unicode
-        run: cargo build --no-default-features --features alloc,lfn,unicode
+      - name: Run cargo build - no_std, alloc, lfn, unicode
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --no-default-features --features alloc,lfn,unicode

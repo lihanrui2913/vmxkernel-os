@@ -1,10 +1,12 @@
 #[cfg(all(not(feature = "std"), feature = "alloc", feature = "lfn"))]
 use alloc::vec::Vec;
 use core::char;
+use core::cmp;
 use core::num;
 use core::str;
 #[cfg(feature = "lfn")]
 use core::{iter, slice};
+use log::{trace, warn};
 
 use crate::dir_entry::{
     DirEntry, DirEntryData, DirFileEntryData, DirLfnEntryData, FileAttributes, ShortName, DIR_ENTRY_SIZE,
@@ -135,11 +137,11 @@ impl<'a, IO: ReadWriteSeek, TP: TimeProvider, OCC: OemCpConverter> Dir<'a, IO, T
             if e.eq_name(name) {
                 // check if file or directory is expected
                 if is_dir.is_some() && Some(e.is_dir()) != is_dir {
-                    if e.is_dir() {
-                        error!("Is a directory");
-                    } else {
-                        error!("Not a directory");
-                    }
+                    // if e.is_dir() {
+                    //     error!("Is a directory");
+                    // } else {
+                    //     error!("Not a directory");
+                    // }
                     return Err(Error::InvalidInput);
                 }
                 return Ok(e);
@@ -150,6 +152,32 @@ impl<'a, IO: ReadWriteSeek, TP: TimeProvider, OCC: OemCpConverter> Dir<'a, IO, T
             }
         }
         Err(Error::NotFound) //("No such file or directory"))
+    }
+
+    /// judge if a path is a file or dir
+    ///
+    /// `path` is a '/' separated directory path relative to self directory.
+    ///
+    /// # Errors
+    ///
+    /// Errors that can be returned:
+    ///
+    /// * `Error::NotFound` will be returned if `path` does not point to any existing directory entry.
+    pub fn check_path_type(&self, path: &str) -> Result<Option<bool>, Error<IO::Error>> {
+        let (name, rest_opt) = split_path(path);
+        if let Some(rest) = rest_opt {
+            let e = self.find_entry(name, Some(true), None)?;
+            return e.to_dir().check_path_type(rest);
+        }
+        // judge path if is a dir
+        for r in self.iter() {
+            let e = r?;
+            // compare name ignoring case
+            if e.eq_name(name) {
+                return Ok(Some(e.is_dir()));
+            }
+        }
+        Err(Error::NotFound)
     }
 
     #[allow(clippy::type_complexity)]
@@ -1130,7 +1158,7 @@ impl ShortNameGenerator {
 
     fn check_for_long_prefix_collision(&mut self, short_name: &[u8; SFN_SIZE]) {
         // check for long prefix form collision (TEXTFI~1.TXT)
-        let long_prefix_len = 6.min(self.basename_len);
+        let long_prefix_len = cmp::min(self.basename_len, 6);
         if short_name[long_prefix_len] != b'~' {
             return;
         }
@@ -1145,7 +1173,7 @@ impl ShortNameGenerator {
 
     fn check_for_short_prefix_collision(&mut self, short_name: &[u8; SFN_SIZE]) {
         // check for short prefix + checksum form collision (TE021F~1.TXT)
-        let short_prefix_len = 2.min(self.basename_len);
+        let short_prefix_len = cmp::min(self.basename_len, 2);
         if short_name[short_prefix_len + 4] != b'~' {
             return;
         }
@@ -1204,12 +1232,12 @@ impl ShortNameGenerator {
     fn build_prefixed_name(&self, num: u32, with_chksum: bool) -> [u8; SFN_SIZE] {
         let mut buf = [SFN_PADDING; SFN_SIZE];
         let prefix_len = if with_chksum {
-            let prefix_len = 2.min(self.basename_len);
+            let prefix_len = cmp::min(self.basename_len, 2);
             buf[..prefix_len].copy_from_slice(&self.short_name[..prefix_len]);
             buf[prefix_len..prefix_len + 4].copy_from_slice(&Self::u16_to_hex(self.chksum));
             prefix_len + 4
         } else {
-            let prefix_len = 6.min(self.basename_len);
+            let prefix_len = cmp::min(self.basename_len, 6);
             buf[..prefix_len].copy_from_slice(&self.short_name[..prefix_len]);
             prefix_len
         };

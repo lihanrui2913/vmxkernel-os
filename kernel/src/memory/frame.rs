@@ -135,13 +135,10 @@ impl BitmapFrameAllocator {
                 self.bitmap.set(i, false);
             }
 
-            //log::info!("found!");
-
             return Some(addr as u64);
         }
 
         loop {
-            //log::info!("next: {}", next);
             if next >= self.bitmap.len() {
                 self.usable_frames += cnt;
                 return None;
@@ -171,6 +168,15 @@ impl BitmapFrameAllocator {
 
                 return Some(addr as u64);
             }
+        }
+    }
+
+    pub fn deallocate_frames(&mut self, frame: PhysFrame<Size4KiB>, cnt: usize) {
+        self.usable_frames += cnt;
+
+        let start_cnt = frame.start_address().as_u64() as usize / 4096;
+        for i in start_cnt..=(start_cnt + cnt) {
+            self.bitmap.set(i, true);
         }
     }
 }

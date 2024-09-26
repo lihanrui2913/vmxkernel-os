@@ -1,4 +1,5 @@
 use crate::error::IoError;
+use log::debug;
 
 /// Provides IO error as an associated type.
 ///
@@ -28,7 +29,7 @@ pub trait Read: IoBase {
     ///
     /// It is not an error if the returned value `n` is smaller than the buffer size, even when the reader is not at
     /// the end of the stream yet. This may happen for example because fewer bytes are actually available right now
-    /// (e. g. being close to end-of-file) or because `read()` was interrupted by a signal.
+    /// (e. g. being close to end-of-file) or because read() was interrupted by a signal.
     ///
     /// # Errors
     ///

@@ -100,13 +100,11 @@ impl<S: PageSize> MemoryManager<S> {
     }
 
     /// deallocates the physical memory.
-    pub fn dealloc_for_dma(virt_addr: VirtAddr, _cnt: usize) {
+    pub fn dealloc_for_dma(virt_addr: VirtAddr, cnt: usize) {
         let phys = crate::memory::convert_virtual_to_physical(virt_addr);
-        unsafe {
-            FRAME_ALLOCATOR
-                .lock()
-                .deallocate_frame(PhysFrame::containing_address(phys));
-        }
+        FRAME_ALLOCATOR
+            .lock()
+            .deallocate_frames(PhysFrame::containing_address(phys), cnt);
     }
 
     pub fn map_virt_to_phys(virt: usize, phys: usize, size: usize, flags: PageTableFlags) {

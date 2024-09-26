@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::SeekFrom;
 use std::str;
 
-use fatfs::{FatType, FsOptions, StdIoWrapper};
+use fatfs::{DefaultTimeProvider, FatType, FsOptions, LossyOemCpConverter, StdIoWrapper};
 use fscommon::BufStream;
 
 const TEST_TEXT: &str = "Rust is cool!\n";
@@ -11,9 +11,9 @@ const FAT12_IMG: &str = "resources/fat12.img";
 const FAT16_IMG: &str = "resources/fat16.img";
 const FAT32_IMG: &str = "resources/fat32.img";
 
-type FileSystem = fatfs::FileSystem<StdIoWrapper<BufStream<fs::File>>>;
+type FileSystem = fatfs::FileSystem<StdIoWrapper<BufStream<fs::File>>, DefaultTimeProvider, LossyOemCpConverter>;
 
-fn call_with_fs<F: Fn(FileSystem)>(f: F, filename: &str) {
+fn call_with_fs<F: Fn(FileSystem) -> ()>(f: F, filename: &str) {
     let _ = env_logger::builder().is_test(true).try_init();
     let file = fs::File::open(filename).unwrap();
     let buf_file = BufStream::new(file);
@@ -209,8 +209,8 @@ fn test_volume_metadata_fat32() {
 
 fn test_status_flags(fs: FileSystem) {
     let status_flags = fs.read_status_flags().unwrap();
-    assert!(!status_flags.dirty());
-    assert!(!status_flags.io_error());
+    assert_eq!(status_flags.dirty(), false);
+    assert_eq!(status_flags.io_error(), false);
 }
 
 #[test]

@@ -4,7 +4,7 @@ use nvme::{
     nvme::NvmeDevice,
 };
 use spin::Mutex;
-use x86_64::{structures::paging::PageTableFlags, PhysAddr};
+use x86_64::{structures::paging::PageTableFlags, PhysAddr, VirtAddr};
 
 use crate::memory::{convert_physical_to_virtual, MemoryManager};
 
@@ -86,16 +86,18 @@ pub fn read_block(hd: usize, block_id: u64, buf: &mut [u8]) {
     let mut cons = NVME_CONS.lock();
     let nvme = cons.get_mut(hd).expect("Cannot get hd");
     nvme.read(&dma, block_id).expect("Cannot read");
-    unsafe { buf.as_mut_ptr().copy_from(dma.virt, 512) };
+    unsafe { buf.as_mut_ptr().copy_from(dma.virt, buf.len()) };
+    <MemoryManager>::dealloc_for_dma(VirtAddr::new(dma.virt as u64), dma.size);
 }
 
 /// Writes a block to the NVMe driver at block block_id
 pub fn write_block(hd: usize, block_id: u64, buf: &[u8]) {
     let dma: Dma<u8> = Dma::<u8>::allocate(&AllocatorImpl, buf.len());
-    unsafe { dma.virt.copy_from(buf.as_ptr(), 512) };
+    unsafe { dma.virt.copy_from(buf.as_ptr(), buf.len()) };
     let mut cons = NVME_CONS.lock();
     let nvme = cons.get_mut(hd).expect("Cannot get hd");
     nvme.write(&dma, block_id).expect("Cannot write");
+    <MemoryManager>::dealloc_for_dma(VirtAddr::new(dma.virt as u64), dma.size);
 }
 
 /// Gets the number of NVMe drives

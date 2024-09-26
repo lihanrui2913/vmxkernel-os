@@ -14,8 +14,8 @@ int main()
     printf("num2 is %d\n", num2);
     printf("Result is %d\n", num1 + num2);
 
-    int fd = creat("/mnt/test.txt", O_RDWR);
-    write(fd, "Hello ext4 fs world!!!", 22);
+    int fd = creat("/root/test.txt", O_RDWR);
+    write(fd, "Hello fs world!!!", 17);
 
     return 0;
 }

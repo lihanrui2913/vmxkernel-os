@@ -3,7 +3,7 @@ use core::convert::TryFrom;
 use core::fmt::Debug;
 
 #[cfg(feature = "chrono")]
-use chrono::{self, Datelike, Timelike};
+use chrono::{self, Datelike, Local, TimeZone, Timelike};
 
 const MIN_YEAR: u16 = 1980;
 const MAX_YEAR: u16 = 2107;
@@ -131,29 +131,27 @@ impl DateTime {
 }
 
 #[cfg(feature = "chrono")]
-impl From<Date> for chrono::NaiveDate {
+impl From<Date> for chrono::Date<Local> {
     fn from(date: Date) -> Self {
-        chrono::NaiveDate::from_ymd_opt(i32::from(date.year), u32::from(date.month), u32::from(date.day)).unwrap()
+        Local.ymd(i32::from(date.year), u32::from(date.month), u32::from(date.day))
     }
 }
 
 #[cfg(feature = "chrono")]
-impl From<DateTime> for chrono::NaiveDateTime {
+impl From<DateTime> for chrono::DateTime<Local> {
     fn from(date_time: DateTime) -> Self {
-        chrono::NaiveDate::from(date_time.date)
-            .and_hms_milli_opt(
-                u32::from(date_time.time.hour),
-                u32::from(date_time.time.min),
-                u32::from(date_time.time.sec),
-                u32::from(date_time.time.millis),
-            )
-            .unwrap()
+        chrono::Date::<Local>::from(date_time.date).and_hms_milli(
+            u32::from(date_time.time.hour),
+            u32::from(date_time.time.min),
+            u32::from(date_time.time.sec),
+            u32::from(date_time.time.millis),
+        )
     }
 }
 
 #[cfg(feature = "chrono")]
-impl From<chrono::NaiveDate> for Date {
-    fn from(date: chrono::NaiveDate) -> Self {
+impl From<chrono::Date<Local>> for Date {
+    fn from(date: chrono::Date<Local>) -> Self {
         #[allow(clippy::cast_sign_loss)]
         let year = u16::try_from(date.year()).unwrap(); // safe unwrap unless year is below 0 or above u16::MAX
         assert!((MIN_YEAR..=MAX_YEAR).contains(&year), "year out of range");
@@ -166,8 +164,8 @@ impl From<chrono::NaiveDate> for Date {
 }
 
 #[cfg(feature = "chrono")]
-impl From<chrono::NaiveDateTime> for DateTime {
-    fn from(date_time: chrono::NaiveDateTime) -> Self {
+impl From<chrono::DateTime<Local>> for DateTime {
+    fn from(date_time: chrono::DateTime<Local>) -> Self {
         let millis_leap = date_time.nanosecond() / 1_000_000; // value in the range [0, 1999] (> 999 if leap second)
         let millis = millis_leap.min(999); // during leap second set milliseconds to 999
         let date = Date::from(date_time.date());
@@ -209,11 +207,11 @@ impl ChronoTimeProvider {
 #[cfg(feature = "chrono")]
 impl TimeProvider for ChronoTimeProvider {
     fn get_current_date(&self) -> Date {
-        Date::from(chrono::Local::now().date_naive())
+        Date::from(chrono::Local::now().date())
     }
 
     fn get_current_date_time(&self) -> DateTime {
-        DateTime::from(chrono::Local::now().naive_local())
+        DateTime::from(chrono::Local::now())
     }
 }
 
@@ -300,10 +298,8 @@ mod tests {
 
     #[test]
     fn date_time_from_chrono_leap_second() {
-        let chrono_date_time = chrono::NaiveDate::from_ymd_opt(2016, 12, 31)
-            .unwrap()
-            .and_hms_milli_opt(23, 59, 59, 1999)
-            .unwrap();
+        use super::TimeZone;
+        let chrono_date_time = super::Local.ymd(2016, 12, 31).and_hms_milli(23, 59, 59, 1999);
         let date_time = DateTime::from(chrono_date_time);
         assert_eq!(
             date_time,

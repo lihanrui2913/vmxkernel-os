@@ -1,4 +1,6 @@
+use core::cmp;
 use core::convert::TryFrom;
+use log::{error, warn, trace};
 
 use crate::dir_entry::DirEntryEditor;
 use crate::error::Error;
@@ -91,11 +93,13 @@ impl<'a, IO: ReadWriteSeek, TP, OCC> File<'a, IO, TP, OCC> {
     pub fn extents(&mut self) -> impl Iterator<Item = Result<Extent, Error<IO::Error>>> + 'a {
         let fs = self.fs;
         let cluster_size = fs.cluster_size();
-        let Some(mut bytes_left) = self.size() else {
-            return None.into_iter().flatten();
+        let mut bytes_left = match self.size() {
+            Some(s) => s,
+            None => return None.into_iter().flatten(),
         };
-        let Some(first) = self.first_cluster else {
-            return None.into_iter().flatten();
+        let first = match self.first_cluster {
+            Some(f) => f,
+            None => return None.into_iter().flatten(),
         };
 
         Some(
@@ -138,7 +142,7 @@ impl<'a, IO: ReadWriteSeek, TP, OCC> File<'a, IO, TP, OCC> {
         }
     }
 
-    pub fn flush_dir_entry(&mut self) -> Result<(), Error<IO::Error>> {
+    fn flush_dir_entry(&mut self) -> Result<(), Error<IO::Error>> {
         if let Some(ref mut e) = self.entry {
             e.flush(self.fs)?;
         }
@@ -185,13 +189,6 @@ impl<'a, IO: ReadWriteSeek, TP, OCC> File<'a, IO, TP, OCC> {
         }
     }
 
-    pub fn set_size(&mut self, size: u32) {
-        match self.entry {
-            Some(ref mut e) => e.set_size(size),
-            _ => {}
-        }
-    }
-
     fn is_dir(&self) -> bool {
         match self.entry {
             Some(ref e) => e.inner().is_dir(),
@@ -217,7 +214,7 @@ impl<'a, IO: ReadWriteSeek, TP, OCC> File<'a, IO, TP, OCC> {
 
     fn flush(&mut self) -> Result<(), Error<IO::Error>> {
         self.flush_dir_entry()?;
-        let mut disk = self.fs.disk.borrow_mut();
+        let mut disk = self.fs.disk.write();
         disk.flush()?;
         Ok(())
     }
@@ -281,20 +278,21 @@ impl<IO: ReadWriteSeek, TP: TimeProvider, OCC> Read for File<'_, IO, TP, OCC> {
         } else {
             self.current_cluster
         };
-        let Some(current_cluster) = current_cluster_opt else {
-            return Ok(0);
+        let current_cluster = match current_cluster_opt {
+            Some(n) => n,
+            None => return Ok(0),
         };
         let offset_in_cluster = self.offset % cluster_size;
         let bytes_left_in_cluster = (cluster_size - offset_in_cluster) as usize;
         let bytes_left_in_file = self.bytes_left_in_file().unwrap_or(bytes_left_in_cluster);
-        let read_size = buf.len().min(bytes_left_in_cluster).min(bytes_left_in_file);
+        let read_size = cmp::min(cmp::min(buf.len(), bytes_left_in_cluster), bytes_left_in_file);
         if read_size == 0 {
             return Ok(0);
         }
         trace!("read {} bytes in cluster {}", read_size, current_cluster);
         let offset_in_fs = self.fs.offset_from_cluster(current_cluster) + u64::from(offset_in_cluster);
         let read_bytes = {
-            let mut disk = self.fs.disk.borrow_mut();
+            let mut disk = self.fs.disk.write();
             disk.seek(SeekFrom::Start(offset_in_fs))?;
             disk.read(&mut buf[..read_size])?
         };
@@ -331,7 +329,8 @@ impl<IO: ReadWriteSeek, TP: TimeProvider, OCC> Write for File<'_, IO, TP, OCC> {
         let offset_in_cluster = self.offset % cluster_size;
         let bytes_left_in_cluster = (cluster_size - offset_in_cluster) as usize;
         let bytes_left_until_max_file_size = (MAX_FILE_SIZE - self.offset) as usize;
-        let write_size = buf.len().min(bytes_left_in_cluster).min(bytes_left_until_max_file_size);
+        let write_size = cmp::min(buf.len(), bytes_left_in_cluster);
+        let write_size = cmp::min(write_size, bytes_left_until_max_file_size);
         // Exit early if we are going to write no data
         if write_size == 0 {
             return Ok(0);
@@ -373,7 +372,7 @@ impl<IO: ReadWriteSeek, TP: TimeProvider, OCC> Write for File<'_, IO, TP, OCC> {
         trace!("write {} bytes in cluster {}", write_size, current_cluster);
         let offset_in_fs = self.fs.offset_from_cluster(current_cluster) + u64::from(offset_in_cluster);
         let written_bytes = {
-            let mut disk = self.fs.disk.borrow_mut();
+            let mut disk = self.fs.disk.write();
             disk.seek(SeekFrom::Start(offset_in_fs))?;
             disk.write(&buf[..write_size])?
         };
@@ -423,7 +422,9 @@ impl<IO: ReadWriteSeek, TP, OCC> Seek for File<'_, IO, TP, OCC> {
                 .and_then(|s| i64::from(s).checked_add(o))
                 .and_then(|n| u32::try_from(n).ok()),
         };
-        let Some(mut new_offset) = new_offset_opt else {
+        let mut new_offset = if let Some(new_offset) = new_offset_opt {
+            new_offset
+        } else {
             error!("Invalid seek offset");
             return Err(Error::InvalidInput);
         };

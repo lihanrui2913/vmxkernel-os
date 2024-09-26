@@ -37,7 +37,7 @@ default-features = false
 
 [dependencies.fatfs]
 path = "crates/good-fatfs"
-features = ["lfn","alloc","unicode"]
+features = ["lfn", "alloc", "unicode"]
 default-features = false
 
 [dependencies.time]
