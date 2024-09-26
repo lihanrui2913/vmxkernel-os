@@ -22,7 +22,6 @@ impl Allocator for AllocatorImpl {
 static NVME_CONS: Mutex<Vec<NvmeDevice<AllocatorImpl>>> = Mutex::new(Vec::new());
 static NVME_SIZES: Mutex<BTreeMap<usize, usize>> = Mutex::new(BTreeMap::new());
 
-// 此驱动有问题，暂时先不初始化
 pub fn init() {
     let pci_devices = get_device_by_class_code(0x01, 0x08);
     if pci_devices.len() > 0 {
@@ -31,9 +30,21 @@ pub fn init() {
 
         let mut idx = 0;
         for pci_device in pci_devices {
-            if let Some(bar) = pci_device.bars[0] {
-                let (addr, len) = bar.unwrap_mem();
-                let addr = PhysAddr::new(addr as u64);
+            if let Some(bar0) = pci_device.bars[0] {
+                let addr: PhysAddr;
+                let len: usize;
+                let (addr0, len0) = bar0.unwrap_mem();
+                if let Some(bar1) = pci_device.bars[1] {
+                    let (addr1, len1) = bar1.unwrap_mem();
+                    addr = PhysAddr::new(
+                        ((addr1 as u64) << 32) | ((addr0 as u64) & 0xFFFFFFFF) as u64,
+                    );
+                    len = len0 + len1;
+                } else {
+                    addr = PhysAddr::new(addr0 as u64);
+                    len = len0;
+                }
+
                 let vaddr = convert_physical_to_virtual(addr);
 
                 <MemoryManager>::map_virt_to_phys(

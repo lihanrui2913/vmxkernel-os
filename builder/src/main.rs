@@ -54,9 +54,9 @@ fn main() {
         cmd.arg("-drive").arg(drive_config);
         // cmd.arg("-drive").arg(ext4_config);
         cmd.arg("-device").arg("ahci,id=ahci");
-        cmd.arg("-device").arg("ide-hd,drive=boot_disk,bus=ahci.0");
+        // cmd.arg("-device").arg("ide-hd,drive=boot_disk,bus=ahci.0");
         // cmd.arg("-device").arg("ide-hd,drive=ext4_disk,bus=ahci.1");
-        // cmd.arg("-device").arg("nvme,drive=boot_disk,serial=1234");
+        cmd.arg("-device").arg("nvme,drive=boot_disk,serial=1234");
         // cmd.arg("-device").arg("nvme,drive=ext4_disk,serial=1235");
         cmd.arg("-m").arg("8G");
         cmd.arg("-smp").arg(format!("cores={}", args.cores));
