@@ -222,15 +222,30 @@ pub fn fsize(fd: FileDescriptor) -> Option<usize> {
 }
 
 pub fn list_dir(path: String) -> Vec<FileInfo> {
-    if let Some(inode) = get_inode_by_path(path) {
-        if inode.read().inode_type() == InodeTy::Dir {
-            let mut list = inode.read().list();
-            list.sort();
+    if path.starts_with("/") {
+        if let Some(inode) = get_inode_by_path(path) {
+            if inode.read().inode_type() == InodeTy::Dir {
+                let mut list = inode.read().list();
+                list.sort();
 
-            return list;
+                return list;
+            }
+        }
+    } else {
+        if let Some(current_file_descriptor_manager) = get_file_descriptor_manager() {
+            let current = current_file_descriptor_manager.get_cwd();
+            let new = alloc::format!("{}{}", current, path);
+            if let Some(inode) = get_inode_by_path(new) {
+                if inode.read().inode_type() == InodeTy::Dir {
+                    let mut list = inode.read().list();
+                    list.sort();
+
+                    return list;
+                }
+            }
         }
     }
-    Vec::new()
+    return Vec::new();
 }
 
 pub fn change_cwd(path: String) {
