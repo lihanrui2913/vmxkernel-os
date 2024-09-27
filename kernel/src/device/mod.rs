@@ -1,7 +1,6 @@
 pub mod ahci;
 pub mod block;
 pub mod display;
-pub mod e1000;
 pub mod hpet;
 pub mod keyboard;
 pub mod log;
