@@ -1,0 +1,30 @@
+name: Build
+
+on: [push]
+
+jobs:
+
+  default:
+    runs-on: debian-latest
+
+    steps:
+      - name: Install dependencies
+        run: apt-get update && apt-get install -y git-lfs
+      - name: Install Rust
+        uses: msrd0/rust-toolchain@master
+        with:
+          toolchain: nightly-2024-07-20
+          components: rust-analyzer, rust-src, rustfmt, clippy
+      - uses: actions/checkout@v3
+      - name: Checkout LFS objects
+        run: git lfs pull
+      - name: Deny check
+        uses: https://github.com/EmbarkStudios/cargo-deny-action@v1
+      - name: Format check
+        run: cargo fmt --check
+      - name: Lint check
+        run: cargo clippy --all-targets --all-features --no-deps
+      - name: Build
+        run: cargo build --all-features
+      - name: Tests
+        run: cargo test --all-features

@@ -1,0 +1,27 @@
+name: Build
+
+on: [pull_request, workflow_dispatch]
+
+concurrency:
+  group: ${{ github.base_ref }}-build
+  cancel-in-progress: true
+
+jobs:
+
+  default:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@master
+      - name: Checkout LFS objects
+        run: git lfs pull
+      - name: Deny check
+        uses: EmbarkStudios/cargo-deny-action@v1
+      - name: Format check
+        run: cargo fmt --check
+      - name: Lint check
+        run: cargo clippy --all-targets --all-features --no-deps
+      - name: Build
+        run: cargo build --all-features
+      - name: Tests
+        run: cargo test --all-features

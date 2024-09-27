@@ -37,6 +37,7 @@ impl Read for InodeRefIO {
 impl Write for InodeRefIO {
     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
         self.inode.read().write_at(self.offset, buf);
+        self.seek(SeekFrom::Current(buf.len() as i64))?;
         Ok(buf.len())
     }
 

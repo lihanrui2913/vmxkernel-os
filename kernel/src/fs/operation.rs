@@ -10,7 +10,7 @@ use spin::Mutex;
 use crate::task::get_current_process_id;
 
 use super::{
-    ext4::Ext4Volume,
+    ext2::Ext2Volume,
     fat32::Fat32Volume,
     vfs::inode::{mount_to, FileInfo, InodeRef, InodeTy},
     ROOT,
@@ -340,7 +340,7 @@ pub fn mount(to: String, partition_path: String) -> Option<()> {
     // }
 
     if volumne.is_none() {
-        volumne = Ext4Volume::new(partition_inode.clone());
+        volumne = Ext2Volume::new(partition_inode.clone());
     }
 
     if volumne.is_none() {

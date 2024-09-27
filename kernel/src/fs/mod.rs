@@ -9,7 +9,7 @@ use vfs::{
     root::RootFS,
 };
 
-mod ext4;
+mod ext2;
 mod fat32;
 pub mod operation;
 pub mod vfs;

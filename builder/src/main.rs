@@ -41,23 +41,23 @@ fn main() {
 
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let ovmf_path = manifest_dir.join("OVMF_CODE.fd");
-        // let ext4_path = manifest_dir.join("ext4.img");
+        let ext2_path = manifest_dir.join("ext2.img");
         let ovmf_config = format!("if=pflash,format=raw,file={}", ovmf_path.display());
 
-        // let ext4_config = format!(
-        //     "if=none,format=raw,file={},id=ext4_disk",
-        //     &ext4_path.display()
-        // );
+        let ext2_config = format!(
+            "if=none,format=raw,file={},id=ext2_disk",
+            &ext2_path.display()
+        );
 
         cmd.arg("-machine").arg("q35");
         cmd.arg("-drive").arg(ovmf_config);
         cmd.arg("-drive").arg(drive_config);
-        // cmd.arg("-drive").arg(ext4_config);
+        cmd.arg("-drive").arg(ext2_config);
         cmd.arg("-device").arg("ahci,id=ahci");
         // cmd.arg("-device").arg("ide-hd,drive=boot_disk,bus=ahci.0");
-        // cmd.arg("-device").arg("ide-hd,drive=ext4_disk,bus=ahci.1");
+        // cmd.arg("-device").arg("ide-hd,drive=ext2_disk,bus=ahci.1");
         cmd.arg("-device").arg("nvme,drive=boot_disk,serial=1234");
-        // cmd.arg("-device").arg("nvme,drive=ext4_disk,serial=1235");
+        cmd.arg("-device").arg("nvme,drive=ext2_disk,serial=1235");
         cmd.arg("-m").arg("8G");
         cmd.arg("-smp").arg(format!("cores={}", args.cores));
         cmd.arg("-usb");

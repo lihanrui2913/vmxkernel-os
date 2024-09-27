@@ -1,0 +1,46 @@
+[package]
+name = "efs"
+version = "0.4.0"
+authors = ["RatCornu <ratcornu@skaven.org>"]
+edition = "2021"
+description = "An OS and architecture independent implementation of some Unix filesystems in Rust."
+documentation = "https://docs.rs/efs/"
+readme = "README.md"
+homepage = "https://codeberg.org/RatCornu/efs"
+repository = "https://codeberg.org/RatCornu/efs"
+license = "GPL-3.0"
+keywords = ["filesystem", "no-std"]
+categories = ["filesystem", "no-std"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+bitflags = "2"
+cfg-if = "1"
+derive_more = { version = "1", default-features = false, features = ["full"] }
+itertools = { version = "0.11", default-features = false, features = ["use_alloc"] }
+once_cell = { version = "1", default-features = false, features = ["alloc", "critical-section"]}
+regex = { version = "1", default-features = false }
+spin = "0.9"
+
+[dev-dependencies]
+itertools = { version = "0.11", default-features = true }
+tempfile = "3"
+
+[features]
+default = ["ext2"]
+ext2 = []
+std = ["once_cell/std"]
+
+[lints.clippy]
+complexity = "deny"
+correctness = "deny"
+nursery = "deny"
+pedantic = "deny"
+perf = "deny"
+style = "deny"
+
+[lints.rust]
+missing_docs = "deny"
