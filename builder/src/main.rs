@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[derive(FromArgs)]
-#[argh(description = "TrashOS bootloader and kernel builder")]
+#[argh(description = "vmxOS bootloader and kernel builder")]
 struct Args {
     #[argh(switch, short = 'b')]
     #[argh(description = "boot the constructed image")]
@@ -34,41 +34,41 @@ fn main() {
 
     if args.boot {
         let mut cmd = Command::new("qemu-system-x86_64");
-        let drive_config = format!(
-            "if=none,format=raw,file={},id=boot_disk",
-            &img_path.display()
-        );
 
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let ovmf_path = manifest_dir.join("OVMF_CODE.fd");
+        let assets_dir = manifest_dir.join("assets");
         // let ext2_path = manifest_dir.join("ext2.img");
+
+        let ovmf_path = assets_dir.join("OVMF_CODE.fd");
         let ovmf_config = format!("if=pflash,format=raw,file={}", ovmf_path.display());
+
+        cmd.arg("-machine").arg("q35");
+        cmd.arg("-drive").arg(ovmf_config);
+        cmd.arg("-m").arg("8G");
+        cmd.arg("-smp").arg(format!("cores={}", args.cores));
+        cmd.arg("-cpu").arg("max,+x2apic");
+
+        cmd.arg("-device").arg("ahci,id=ahci");
+        let drive_config = format!(
+            "format=raw,id=boot_disk,file={},if=none",
+            img_path.display()
+        );
+        // cmd.arg("-device").arg("ide-hd,drive=boot_disk,bus=ahci.0");
+        cmd.arg("-device").arg("nvme,drive=boot_disk,serial=1234");
+        cmd.arg("-drive").arg(drive_config);
 
         // let ext2_config = format!(
         //     "if=none,format=raw,file={},id=ext2_disk",
         //     &ext2_path.display()
         // );
-
-        cmd.arg("-machine").arg("q35");
-        cmd.arg("-drive").arg(ovmf_config);
-        cmd.arg("-drive").arg(drive_config);
-        // cmd.arg("-drive").arg(ext2_config);
-        cmd.arg("-device").arg("ahci,id=ahci");
-        // cmd.arg("-device").arg("ide-hd,drive=boot_disk,bus=ahci.0");
         // cmd.arg("-device").arg("ide-hd,drive=ext2_disk,bus=ahci.1");
-        cmd.arg("-device").arg("nvme,drive=boot_disk,serial=1234");
         // cmd.arg("-device").arg("nvme,drive=ext2_disk,serial=1235");
-        cmd.arg("-m").arg("8G");
-        cmd.arg("-smp").arg(format!("cores={}", args.cores));
         cmd.arg("-usb");
         cmd.arg("-device").arg("nec-usb-xhci,id=xhci");
         cmd.arg("-net").arg("nic");
 
         if args.kvm {
-            cmd.arg("-cpu").arg("max,+apic,+x2apic,+vmx");
             cmd.arg("--enable-kvm");
-        } else {
-            cmd.arg("-cpu").arg("max,+x2apic");
         }
         if args.haxm {
             cmd.arg("-accel").arg("hax");
@@ -87,10 +87,11 @@ fn build_img() -> PathBuf {
     println!("Building UEFI disk image for kernel at {:#?}", &kernel_path);
 
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let assets_dir = manifest_dir.join("assets");
     let img_path = manifest_dir.parent().unwrap().join("vmxOS.img");
 
-    let limine_elf = manifest_dir.join("BOOTX64.EFI");
-    let limine_config = manifest_dir.join("limine.cfg");
+    let limine_elf = assets_dir.join("BOOTX64.EFI");
+    let limine_config = assets_dir.join("limine.conf");
 
     ImageBuilder::build(
         kernel_path.to_path_buf(),
