@@ -15,7 +15,7 @@ pub fn main(args: Vec<String>) -> usize {
     let buf = alloc::vec![0u8; fsize].leak();
     vstd::fs::read(fd, buf);
 
-    let args = "/shell.elf --ls";
+    let args = "/shell.elf ls";
     let addr = alloc::vec![0u8; args.len()].leak();
     addr.copy_from_slice(args.as_bytes());
     let pid = vstd::task::execve(buf, addr.as_ptr() as usize, addr.len());
