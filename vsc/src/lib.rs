@@ -68,6 +68,7 @@ pub extern "C" fn execve(
     }
 
     let buf = alloc::vec![0u8; vstd::fs::fsize(fd)].leak();
+    vstd::fs::read(fd, buf);
 
     let args_string =
         String::from(unsafe { CStr::from_ptr(args as *const c_char).to_str().unwrap() });
