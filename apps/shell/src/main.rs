@@ -70,14 +70,16 @@ pub fn main(args: Vec<String>) -> usize {
         command_function_list.insert("write", write);
     }
 
-    let start_cmd = args[1].clone();
+    if args.len() > 1 {
+        let start_cmd = args[1].clone();
 
-    let function = command_function_list.get(&start_cmd.as_str());
+        let function = command_function_list.get(&start_cmd.as_str());
 
-    if let Some(function) = function {
-        function(args[1..].to_vec());
-    } else if let None = run::try_run(start_cmd.clone(), "") {
-        println!("Start command not found: {}", start_cmd.clone());
+        if let Some(function) = function {
+            function(args[1..].to_vec());
+        } else if let None = run::try_run(start_cmd.clone(), "") {
+            println!("Start command not found: {}", start_cmd.clone());
+        }
     }
 
     let mut input_buf = String::new();

@@ -43,8 +43,37 @@ pub extern "C" fn getpid() -> c_int {
 }
 
 #[no_mangle]
+pub extern "C" fn waitpid(pid: c_int) -> c_int {
+    vstd::task::wait(pid as usize) as c_int
+}
+
+#[no_mangle]
 pub extern "C" fn _exit(code: c_int) -> ! {
     vstd::task::exit(code as usize)
+}
+
+#[no_mangle]
+pub extern "C" fn execve(
+    path: *const c_char,
+    args: *const *const c_char,
+    _envp: *const *const c_char,
+) -> c_int {
+    let fd = vstd::fs::open(
+        String::from(unsafe { CStr::from_ptr(path).to_str().unwrap() }),
+        OpenMode::Read,
+    );
+
+    if fd == usize::MAX {
+        panic!("open() cannot open file");
+    }
+
+    let buf = alloc::vec![0u8; vstd::fs::fsize(fd)].leak();
+
+    let args_string =
+        String::from(unsafe { CStr::from_ptr(args as *const c_char).to_str().unwrap() });
+
+    let pid = vstd::task::execve(buf, args_string.as_ptr() as usize, args_string.len()) as c_int;
+    pid
 }
 
 #[no_mangle]
