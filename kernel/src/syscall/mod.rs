@@ -1,4 +1,4 @@
-use core::arch::asm;
+use core::arch::naked_asm;
 use x86_64::registers::model_specific::{Efer, EferFlags};
 use x86_64::registers::model_specific::{LStar, SFMask, Star};
 use x86_64::registers::rflags::RFlags;
@@ -36,7 +36,7 @@ pub fn init() {
 #[naked]
 extern "C" fn syscall_handler() {
     unsafe {
-        asm!(
+        naked_asm!(
             "push rcx",
             "push r11",
             "push rbp",
@@ -61,7 +61,6 @@ extern "C" fn syscall_handler() {
 
             "sysretq",
             syscall_matcher = sym syscall_matcher,
-            options(noreturn)
         );
     }
 }

@@ -32,7 +32,7 @@ extern "C" fn syscall(
     _arg5: usize,
 ) -> usize {
     unsafe {
-        core::arch::asm!(
+        core::arch::naked_asm!(
             "mov rax, rdi",
             "mov rdi, rsi",
             "mov rsi, rdx",
@@ -41,7 +41,6 @@ extern "C" fn syscall(
             "mov r8, r9",
             "syscall",
             "ret",
-            options(noreturn)
         )
     }
 }

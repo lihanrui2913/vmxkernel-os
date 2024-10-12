@@ -1,6 +1,6 @@
 use alloc::collections::VecDeque;
 use core::fmt::{Debug, Formatter, Result};
-use core::{arch::asm, mem::size_of};
+use core::{arch::naked_asm, mem::size_of};
 
 use bit_field::BitField;
 use x86::bits64::vmx;
@@ -335,7 +335,7 @@ impl<H: RvmHal> VmxVcpu<H> {
 
     #[naked]
     unsafe extern "C" fn vmx_launch(&mut self) -> ! {
-        asm!(
+        naked_asm!(
             "mov    [rdi + {host_stack_top}], rsp", // save current RSP to Vcpu::host_stack_top
             "mov    rsp, rdi",                      // set RSP to guest regs area
             restore_regs_from_stack!(),
@@ -343,13 +343,12 @@ impl<H: RvmHal> VmxVcpu<H> {
             "jmp    {failed}",
             host_stack_top = const size_of::<GeneralRegisters>(),
             failed = sym Self::vmx_entry_failed,
-            options(noreturn),
         )
     }
 
     #[naked]
     unsafe extern "C" fn vmx_exit(&mut self) -> ! {
-        asm!(
+        naked_asm!(
             save_regs_to_stack!(),
             "mov    r15, rsp",                      // save temporary RSP to r15
             "mov    rdi, rsp",                      // set the first arg to &Vcpu
@@ -362,7 +361,6 @@ impl<H: RvmHal> VmxVcpu<H> {
             host_stack_top = const size_of::<GeneralRegisters>(),
             vmexit_handler = sym Self::vmexit_handler,
             failed = sym Self::vmx_entry_failed,
-            options(noreturn),
         );
     }
 
