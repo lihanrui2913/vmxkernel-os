@@ -1,6 +1,7 @@
 use spin::Lazy;
 use x86_64::instructions::segmentation::{Segment, CS, SS};
 use x86_64::instructions::tables::load_tss;
+use x86_64::registers::segmentation::{FS, GS};
 use x86_64::structures::gdt::GlobalDescriptorTable;
 use x86_64::structures::gdt::{Descriptor, SegmentSelector};
 use x86_64::structures::tss::TaskStateSegment;
@@ -49,6 +50,8 @@ impl CpuInfo {
         let selectors = &self.selectors.as_ref().unwrap();
         unsafe {
             CS::set_reg(selectors.code_selector);
+            FS::set_reg(selectors.data_selector);
+            GS::set_reg(selectors.data_selector);
             SS::set_reg(selectors.data_selector);
             load_tss(selectors.tss_selector.unwrap());
         }

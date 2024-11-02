@@ -3,10 +3,9 @@ name = "vsc"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["staticlib"]
-
 [dependencies]
+x86_64 = "0.15.1"
+spin = "0.9.8"
 
-[dependencies.vstd]
-path = "../vstd"
+[dependencies.syscall_index]
+path = "../kernel/crates/syscall_index"

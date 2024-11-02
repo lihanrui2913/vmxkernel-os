@@ -31,6 +31,7 @@ pub enum SyscallIndex {
     SBrk,
     Create,
     Mount,
+    Mmap,
 }
 
 #[derive(Debug)]

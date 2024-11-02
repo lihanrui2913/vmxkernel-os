@@ -5,7 +5,7 @@ use crossbeam_queue::ArrayQueue;
 use pc_keyboard::{layouts, DecodedKey, HandleControl, KeyCode, Keyboard, ScancodeSet1};
 use spin::Lazy;
 
-static BYTES: Lazy<ArrayQueue<char>> = Lazy::new(|| ArrayQueue::new(1024));
+static BYTES: Lazy<ArrayQueue<char>> = Lazy::new(|| ArrayQueue::new(2048));
 
 pub fn keyboard_parse_thread() {
     fn push_char(ch: char) {
@@ -92,14 +92,5 @@ impl Inode for Terminal {
             return buf.len();
         }
         0
-    }
-
-    fn ioctl(&self, cmd: usize, _arg: usize) -> usize {
-        match cmd {
-            _ => {
-                log::warn!("Unknown cmd in terminal ioctl");
-                return 0;
-            }
-        }
     }
 }

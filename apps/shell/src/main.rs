@@ -30,7 +30,7 @@ fn shell_read_line(fd: usize, buf: &mut String) {
             if let Some(_) = buf.pop() {
                 print!("{} {}", 8 as char, 8 as char);
             }
-        } else if tmp_buf[0] != 0 {
+        } else {
             print!("{}", tmp_buf[0] as char);
             buf.push(tmp_buf[0] as char);
         }

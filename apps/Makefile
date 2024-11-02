@@ -3,8 +3,8 @@ APPS := test.elf
 all: $(APPS)
 
 %.elf: %.c
-	x86_64-elf-gcc -o $@.o -c $< -I../newlib/include -O2 -fno-stack-protector
-	x86_64-elf-ld -z noexecstack -o $@ $@.o ../newlib/lib/libc.a ../vsc/target/x86_64-unknown-none/debug/libvsc.a
+	gcc -o $@.o -c $< -I../libc/include -O0 -fno-stack-protector -fno-builtin -nostdinc -nostdlib
+	ld ../libc/lib/crt*.o ../libc/lib/lib*.a $@.o -o $@
 	rm -rf $@.o
 
 clean:

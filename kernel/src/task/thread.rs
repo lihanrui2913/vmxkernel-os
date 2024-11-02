@@ -4,12 +4,14 @@ use core::fmt::Debug;
 use core::sync::atomic::{AtomicU64, Ordering};
 use spin::RwLock;
 use x86_64::instructions::interrupts;
+use x86_64::registers::control::{Cr4, Cr4Flags};
 
 use super::context::Context;
 use super::process::{WeakSharedProcess, KERNEL_PROCESS};
 use super::scheduler::SCHEDULER;
 use super::stack::{KernelStack, UserStack};
 use crate::arch::gdt::Selectors;
+use crate::device::fpu::FpState;
 use crate::memory::{ExtendedPageTable, KERNEL_PAGE_TABLE};
 
 pub(super) type SharedThread = Arc<RwLock<Box<Thread>>>;
@@ -30,6 +32,8 @@ pub struct Thread {
     pub kernel_stack: KernelStack,
     pub context: Context,
     pub process: WeakSharedProcess,
+    pub fpu_context: FpState,
+    pub fsbase: usize,
 }
 
 impl Thread {
@@ -39,6 +43,8 @@ impl Thread {
             context: Context::default(),
             kernel_stack: KernelStack::new(),
             process,
+            fpu_context: FpState::new(),
+            fsbase: 0,
         };
 
         thread
@@ -82,9 +88,31 @@ impl Thread {
             Selectors::get_user_segments(),
         );
 
+        thread.save_fsbase();
+
         let thread = Arc::new(RwLock::new(Box::new(thread)));
         process.threads.push(thread.clone());
 
         SCHEDULER.lock().add(Arc::downgrade(&thread));
+    }
+
+    pub fn save_fsbase(&mut self) {
+        unsafe {
+            if Cr4::read().contains(Cr4Flags::FSGSBASE) {
+                self.fsbase = x86::current::segmentation::rdfsbase() as usize;
+            } else {
+                self.fsbase = x86::msr::rdmsr(x86::msr::IA32_FS_BASE) as usize;
+            }
+        }
+    }
+
+    pub fn restore_fsbase(&self) {
+        unsafe {
+            if Cr4::read().contains(Cr4Flags::FSGSBASE) {
+                x86::current::segmentation::wrfsbase(self.fsbase as u64);
+            } else {
+                x86::msr::wrmsr(x86::msr::IA32_FS_BASE, self.fsbase as u64);
+            }
+        }
     }
 }

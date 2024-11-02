@@ -274,13 +274,7 @@ pub mod lapic;
 
 use gconfig::*;
 
-pub fn init() {
-    unsafe {
-        Cr0::write_raw(CR0);
-        Cr4::write_raw(CR4);
-        Efer::write_raw(EFER);
-    }
-}
+pub fn init() {}
 
 #[repr(align(4096))]
 struct AlignedMemory<const LEN: usize>([u8; LEN]);
@@ -349,6 +343,12 @@ fn setup_gpm(entry_paddr: usize) -> RvmResult<GuestPhysMemorySet> {
 }
 
 pub fn run_vm(entry_address: usize) -> ! {
+    unsafe {
+        Cr0::write_raw(CR0);
+        Cr4::write_raw(CR4);
+        Efer::write_raw(EFER);
+    }
+
     let mut percpu = RvmPerCpu::<RvmHalImpl>::new(0);
     percpu.hardware_enable().unwrap();
 

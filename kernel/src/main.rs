@@ -42,7 +42,7 @@ extern "C" fn _start() -> ! {
     let size = inode.read().size();
     let buf = kernel::alloc::vec![0u8; size].leak();
     inode.read().read_at(0, buf);
-    Process::new_user_process("/root/init.elf", buf);
+    Process::new_user_process("init", buf);
 
     START_SCHEDULE.store(true, core::sync::atomic::Ordering::SeqCst);
     x86_64::instructions::interrupts::enable();

@@ -44,9 +44,9 @@ fn main() {
 
         cmd.arg("-machine").arg("q35");
         cmd.arg("-drive").arg(ovmf_config);
-        cmd.arg("-m").arg("8G");
+        cmd.arg("-m").arg("4G");
         cmd.arg("-smp").arg(format!("cores={}", args.cores));
-        cmd.arg("-cpu").arg("max,+x2apic");
+        cmd.arg("-cpu").arg("qemu64,+x2apic,+fpu,+sse,+mmx");
 
         cmd.arg("-device").arg("ahci,id=ahci");
         let drive_config = format!(
@@ -64,8 +64,7 @@ fn main() {
         // cmd.arg("-device").arg("ide-hd,drive=ext2_disk,bus=ahci.1");
         // cmd.arg("-device").arg("nvme,drive=ext2_disk,serial=1235");
         cmd.arg("-usb");
-        cmd.arg("-device").arg("nec-usb-xhci,id=xhci");
-        cmd.arg("-net").arg("nic");
+        cmd.arg("-device").arg("qemu-xhci,id=xhci");
 
         if args.kvm {
             cmd.arg("--enable-kvm");

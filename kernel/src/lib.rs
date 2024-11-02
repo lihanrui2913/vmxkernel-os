@@ -33,6 +33,7 @@ pub fn init() {
     device::pci::init();
     device::nvme::init();
     device::xhci::init();
+    device::fpu::init();
     virt::kvm::init();
     syscall::init();
     task::scheduler::init();

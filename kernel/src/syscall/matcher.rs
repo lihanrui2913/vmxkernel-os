@@ -40,5 +40,6 @@ pub extern "C" fn syscall_matcher(
         SyscallIndex::SBrk => sbrk(arg1),
         SyscallIndex::Create => create(arg1, arg2, arg3),
         SyscallIndex::Mount => mount(arg1, arg2, arg3, arg4),
+        SyscallIndex::Mmap => mmap(arg1, arg2, arg3, arg4),
     }
 }

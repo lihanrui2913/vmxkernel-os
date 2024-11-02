@@ -15,7 +15,7 @@ pub static SCHEDULER: Lazy<Mutex<Scheduler>> = Lazy::new(|| Mutex::new(Scheduler
 
 pub fn init() {
     SCHEDULER_INIT.store(true, Ordering::SeqCst);
-    log::info!("Scheduler initialized, interrupts enabled!");
+    log::info!("Scheduler initialized!");
 }
 
 pub struct Scheduler {
@@ -87,12 +87,15 @@ impl Scheduler {
         if let Some(next_thread) = self.ready_threads.pop_front() {
             self.current_threads.insert(lapic_id, next_thread);
             if let Some(last_thread) = last_thread {
+                last_thread.upgrade().unwrap().write().save_fsbase();
                 self.ready_threads.push_back(last_thread);
             }
         }
 
         let next_thread = self.current_threads[&lapic_id].upgrade().unwrap();
         let next_thread = next_thread.read();
+
+        next_thread.restore_fsbase();
 
         let kernel_address = next_thread.kernel_stack.end_address();
         CPUS.write().get_mut(lapic_id).set_ring0_rsp(kernel_address);

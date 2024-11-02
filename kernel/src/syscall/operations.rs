@@ -1,6 +1,6 @@
 use crate::fs::operation::{get_inode_by_fd, OpenMode};
 use crate::fs::vfs::inode::{FileInfo, InodeTy};
-use crate::memory::{addr_to_mut_ref, write_for_syscall};
+use crate::memory::{addr_to_mut_ref, ref_current_page_table, write_for_syscall, FRAME_ALLOCATOR};
 use crate::task::process::{is_process_exited, ProcessId};
 use crate::task::scheduler::SCHEDULER;
 use crate::task::{get_current_process, get_current_process_id};
@@ -11,6 +11,7 @@ use alloc::vec::Vec;
 use core::alloc::Layout;
 use core::{slice, str, usize};
 use spin::{Lazy, Mutex};
+use x86_64::structures::paging::{FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB};
 use x86_64::VirtAddr;
 
 pub fn print(buffer: *const u8, length: usize) -> usize {
@@ -301,4 +302,52 @@ pub fn mount(
     }
 
     0
+}
+
+pub fn mmap(addr: usize, len: usize, _prot: usize, flags: usize) -> usize {
+    if addr == 0 {
+        return sbrk(len);
+    }
+    let mut page_table = unsafe { ref_current_page_table() };
+    for i in 0..((len + 4095) / 4096) {
+        let result = unsafe {
+            page_table.map_to(
+                Page::<Size4KiB>::containing_address(VirtAddr::new((addr + i * 4096) as u64)),
+                FRAME_ALLOCATOR.lock().allocate_frame().unwrap(),
+                PageTableFlags::from_bits(flags as u64).unwrap(),
+                &mut *FRAME_ALLOCATOR.lock(),
+            )
+        };
+
+        match result {
+            Ok(f) => f.flush(),
+            Err(e) => match e {
+                x86_64::structures::paging::mapper::MapToError::PageAlreadyMapped(_) => {
+                    page_table
+                        .unmap(Page::<Size4KiB>::containing_address(VirtAddr::new(
+                            (addr + i * 4096) as u64,
+                        )))
+                        .unwrap()
+                        .1
+                        .flush();
+                    unsafe {
+                        page_table
+                            .map_to(
+                                Page::<Size4KiB>::containing_address(VirtAddr::new(
+                                    (addr + i * 4096) as u64,
+                                )),
+                                FRAME_ALLOCATOR.lock().allocate_frame().unwrap(),
+                                PageTableFlags::from_bits(flags as u64).unwrap(),
+                                &mut *FRAME_ALLOCATOR.lock(),
+                            )
+                            .unwrap()
+                            .flush();
+                    }
+                }
+                _ => panic!("Cannot do mmap"),
+            },
+        }
+    }
+
+    addr
 }
