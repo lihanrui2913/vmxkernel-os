@@ -10,6 +10,8 @@ pub mod scheduler;
 pub mod stack;
 pub mod thread;
 
+pub use self::scheduler::init;
+
 #[inline]
 pub fn get_current_thread() -> Arc<RwLock<Box<Thread>>> {
     SCHEDULER.lock().current_thread().upgrade().unwrap()
